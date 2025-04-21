@@ -8,13 +8,22 @@ interface ExpenseByCategoryProps {
     value: number;
     color: string;
   }>;
+  formatCurrency?: (value: number) => string;
+  title?: string;
 }
 
-export default function ExpenseByCategory({ data }: ExpenseByCategoryProps) {
+export default function ExpenseByCategory({ 
+  data,
+  formatCurrency = (value) => `$${value}`,
+  title = "Expenses by Category"
+}: ExpenseByCategoryProps) {
+  // Calculate total for percentages
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+
   return (
     <Card className="overflow-hidden">
       <CardHeader>
-        <CardTitle>Expenses by Category</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-80">
@@ -35,7 +44,12 @@ export default function ExpenseByCategory({ data }: ExpenseByCategoryProps) {
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value) => [`$${value}`, 'Amount']} 
+                formatter={(value) => [formatCurrency(Number(value)), 'Amount']} 
+                labelStyle={{ color: 'var(--foreground)' }}
+                contentStyle={{ 
+                  backgroundColor: 'var(--background)', 
+                  borderColor: 'var(--border)'
+                }}
               />
               <Legend />
             </PieChart>

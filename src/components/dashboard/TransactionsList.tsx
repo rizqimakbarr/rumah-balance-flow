@@ -24,22 +24,31 @@ interface Transaction {
   category: string;
   amount: number;
   type: 'income' | 'expense';
+  currency: string;
 }
 
 interface TransactionsListProps {
   transactions: Transaction[];
+  formatCurrency?: (value: number) => string;
+  title?: string;
+  viewAllLabel?: string;
 }
 
-export default function TransactionsList({ transactions }: TransactionsListProps) {
+export default function TransactionsList({ 
+  transactions, 
+  formatCurrency = (value) => `$${value}`,
+  title = "Recent Transactions",
+  viewAllLabel = "View All"
+}: TransactionsListProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Recent Transactions</CardTitle>
+          <CardTitle>{title}</CardTitle>
           <CardDescription>Your latest financial activities</CardDescription>
         </div>
         <Button variant="outline" size="sm">
-          View All
+          {viewAllLabel}
         </Button>
       </CardHeader>
       <CardContent>
@@ -63,7 +72,7 @@ export default function TransactionsList({ transactions }: TransactionsListProps
                 <TableCell className={`text-right font-medium ${
                   transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
                 }`}>
-                  {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
+                  {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                 </TableCell>
               </TableRow>
             ))}

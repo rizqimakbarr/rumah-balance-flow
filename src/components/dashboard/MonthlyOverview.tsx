@@ -17,13 +17,19 @@ interface MonthlyOverviewProps {
     income: number;
     expenses: number;
   }>;
+  formatCurrency?: (value: number) => string;
+  title?: string;
 }
 
-export default function MonthlyOverview({ data }: MonthlyOverviewProps) {
+export default function MonthlyOverview({ 
+  data, 
+  formatCurrency = (value) => `$${value}`,
+  title = "Monthly Overview"
+}: MonthlyOverviewProps) {
   return (
     <Card className="overflow-hidden">
       <CardHeader>
-        <CardTitle>Monthly Overview</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-80">
@@ -41,7 +47,7 @@ export default function MonthlyOverview({ data }: MonthlyOverviewProps) {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip 
-                formatter={(value) => [`$${value}`, '']} 
+                formatter={(value) => [formatCurrency(Number(value)), '']} 
                 labelStyle={{ color: 'var(--foreground)' }}
                 contentStyle={{ 
                   backgroundColor: 'var(--background)', 

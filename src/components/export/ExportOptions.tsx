@@ -1,4 +1,5 @@
 
+import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,8 +12,20 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Download, FileText, FileSpreadsheet } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ExportOptions() {
+  const [selectedFormat, setSelectedFormat] = useState("pdf");
+
+  const handleExport = useCallback(() => {
+    const format = selectedFormat === "pdf" ? "PDF report" : "Excel spreadsheet";
+    
+    toast.success(`Export successful`, {
+      description: `Your ${format} has been downloaded.`,
+      duration: 3000,
+    });
+  }, [selectedFormat]);
+
   return (
     <Card>
       <CardHeader>
@@ -20,7 +33,11 @@ export default function ExportOptions() {
         <CardDescription>Download your financial information</CardDescription>
       </CardHeader>
       <CardContent>
-        <RadioGroup defaultValue="pdf" className="space-y-4">
+        <RadioGroup 
+          value={selectedFormat} 
+          onValueChange={setSelectedFormat} 
+          className="space-y-4"
+        >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="pdf" id="pdf" />
             <Label htmlFor="pdf" className="flex items-center cursor-pointer">
@@ -48,7 +65,7 @@ export default function ExportOptions() {
         </RadioGroup>
       </CardContent>
       <CardFooter>
-        <Button className="w-full">
+        <Button className="w-full" onClick={handleExport}>
           <Download className="mr-2 h-4 w-4" /> 
           Download Export
         </Button>

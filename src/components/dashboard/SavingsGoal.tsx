@@ -7,32 +7,43 @@ interface SavingsGoalProps {
   current: number;
   target: number;
   dueDate?: string;
+  formatCurrency?: (value: number) => string;
 }
 
 export default function SavingsGoal({ 
   title, 
   current, 
-  target,
-  dueDate
+  target, 
+  dueDate,
+  formatCurrency = (value) => `$${value}` 
 }: SavingsGoalProps) {
-  const progress = Math.round((current / target) * 100);
+  const percentage = Math.round((current / target) * 100);
   
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-md font-medium">{title}</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-base font-semibold">{title}</CardTitle>
+          {dueDate && <span className="text-xs text-muted-foreground">Due: {dueDate}</span>}
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="flex justify-between items-end mb-2">
-          <span className="text-2xl font-bold">${current.toLocaleString()}</span>
-          <span className="text-sm text-muted-foreground">of ${target.toLocaleString()}</span>
-        </div>
-        <Progress value={progress} className="h-2" />
-        <div className="flex justify-between mt-2">
-          <span className="text-xs">{progress}% complete</span>
-          {dueDate && (
-            <span className="text-xs text-muted-foreground">Due {dueDate}</span>
-          )}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Progress</span>
+            <span className="font-medium">{percentage}%</span>
+          </div>
+          <Progress value={percentage} className="h-2" />
+          <div className="flex justify-between text-sm">
+            <div>
+              <p className="text-muted-foreground">Current</p>
+              <p className="font-medium">{formatCurrency(current)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-muted-foreground">Target</p>
+              <p className="font-medium">{formatCurrency(target)}</p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

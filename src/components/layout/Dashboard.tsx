@@ -17,7 +17,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { 
   Home, 
   Inbox, 
-  User, 
+  Users,
   Calendar,
   Settings, 
   Download,
@@ -63,7 +63,7 @@ export default function Dashboard({ children }: DashboardProps) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton className="flex items-center gap-3">
-                    <User size={18} />
+                    <Users size={18} />
                     <span>Family</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
