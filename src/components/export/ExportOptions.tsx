@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Download, FileSpreadsheet, FilePdf } from "lucide-react";
+import { Download, FileText, FileSpreadsheet } from "lucide-react";
 
 export default function ExportOptions() {
   return (
@@ -24,7 +24,7 @@ export default function ExportOptions() {
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="pdf" id="pdf" />
             <Label htmlFor="pdf" className="flex items-center cursor-pointer">
-              <FilePdf className="mr-2 h-4 w-4" />
+              <FileText className="mr-2 h-4 w-4" />
               <div>
                 <p className="font-medium">PDF Report</p>
                 <p className="text-sm text-muted-foreground">
