@@ -4,6 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
+interface TransactionsListProps {
+  transactions: any[];
+  formatCurrency?: (value: number) => string;
+  title?: string;
+  viewAllLabel?: string;
+  onEdit?: (transaction: any) => void;
+  onDelete?: (id: string) => void;
+  enableActions?: boolean;
+}
+
 export default function TransactionsList({
   transactions,
   formatCurrency = (value) => `$${value}`,
@@ -12,7 +22,7 @@ export default function TransactionsList({
   onEdit,
   onDelete,
   enableActions = false,
-}: any) {
+}: TransactionsListProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -53,8 +63,8 @@ export default function TransactionsList({
                 {enableActions ? (
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button size="xs" variant="outline" onClick={() => onEdit(transaction)}>Edit</Button>
-                      <Button size="xs" variant="destructive" onClick={() => onDelete(transaction.id)}>Delete</Button>
+                      <Button size="sm" variant="outline" onClick={() => onEdit && onEdit(transaction)}>Edit</Button>
+                      <Button size="sm" variant="destructive" onClick={() => onDelete && onDelete(transaction.id)}>Delete</Button>
                     </div>
                   </TableCell>
                 ) : null}

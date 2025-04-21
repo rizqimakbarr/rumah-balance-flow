@@ -1,70 +1,32 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 export default function MonthlyOverview({
-  data, formatCurrency = (value) => `$${value}`, title = "Monthly Overview", gradient = false,
-}: {
-  data: Array<{ name: string; income: number; expenses: number }>;
-  formatCurrency?: (value: number) => string;
-  title?: string;
-  gradient?: boolean;
-}) {
+  data, formatCurrency = (value) => `$${value}`, title = "Monthly Overview", gradient = false, rounded = false, modern = false,
+}: any) {
   return (
-    <Card className={gradient ? "bg-gradient-to-br from-purple-100 via-white to-slate-100 shadow-2xl rounded-xl border-0" : ""}>
+    <Card className={`${gradient ? "bg-gradient-to-br from-indigo-100 via-white to-blue-50" : ""} ${rounded ? "rounded-2xl" : ""} ${modern ? "shadow-lg" : ""}`}>
       <CardHeader>
         <CardTitle className="font-semibold">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={data}
-              margin={{
-                top: 20, right: 35, left: 12, bottom: 8,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-              <XAxis
-                dataKey="name"
-                style={{ fontWeight: 500 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                style={{ fontWeight: 500 }}
-              />
-              <Tooltip
-                formatter={(value) => [formatCurrency(Number(value)), '']}
-                contentStyle={{
-                  background: "rgba(255,255,255,0.95)",
-                  borderRadius: 16,
-                  borderColor: "#e5e7eb"
-                }}
-                labelStyle={{ color: '#9333ea', fontWeight: 700 }}
-                itemStyle={{ color: "#333" }}
-              />
-              <Line
-                type="monotone"
-                dataKey="income"
-                stroke="#4ADE80"
-                strokeWidth={3}
-                dot={{ strokeWidth: 2, r: 6, fill: "#fff", stroke: "#34D399" }}
-                activeDot={{ r: 10, fill: "#fff", stroke: "#34D399", strokeWidth: 3, filter: "drop-shadow(0 3px 8px #34d39933)" }}
-              />
-              <Line
-                type="monotone"
-                dataKey="expenses"
-                stroke="#A78BFA"
-                strokeWidth={3}
-                dot={{ strokeWidth: 2, r: 6, fill: "#fff", stroke: "#8B5CF6" }}
-                activeDot={{ r: 10, fill: "#fff", stroke: "#8B5CF6", strokeWidth: 3, filter: "drop-shadow(0 3px 8px #8b5cf644)" }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={data}>
+            <defs>
+              <linearGradient id="monthly-gradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#9b87f5" />
+                <stop offset="100%" stopColor="#1EAEDB" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="2 8" stroke="#E5E7EB" />
+            <XAxis dataKey="name" tick={{ fill: "#1A1F2C", fontWeight: 500, fontSize: 16 }} />
+            <YAxis tick={{ fill: "#6366f1", fontWeight: 400 }} />
+            <Tooltip contentStyle={{ borderRadius: 16, background: "#fff" }} formatter={formatCurrency} />
+            <Legend />
+            <Line type="monotone" dataKey="income" stroke="url(#monthly-gradient)" strokeWidth={3} dot={{ r: 6, fill: "#9b87f5" }} />
+            <Line type="monotone" dataKey="expenses" stroke="#ec4899" strokeWidth={3} dot={{ r: 6, fill: "#ec4899" }} />
+          </LineChart>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );

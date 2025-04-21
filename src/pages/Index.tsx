@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import StatsCard from "@/components/dashboard/StatsCard";
@@ -38,9 +37,9 @@ const initialTransactions = [
 ];
 
 const initialFamilyMembers = [
-  { id: "1", name: "John Doe", role: "Admin", status: "online" },
-  { id: "2", name: "Jane Smith", role: "Member", status: "online" },
-  { id: "3", name: "Mike Johnson", role: "Member", status: "offline" }
+  { id: "1", name: "John Doe", role: "Admin", status: "online" as "online" },
+  { id: "2", name: "Jane Smith", role: "Member", status: "online" as "online" },
+  { id: "3", name: "Mike Johnson", role: "Member", status: "offline" as "offline" }
 ];
 
 const Index = () => {
@@ -48,15 +47,18 @@ const Index = () => {
   const [transactions, setTransactions] = useState(initialTransactions);
   const [categories, setCategories] = useState(initialCategories);
   const [monthlyData, setMonthlyData] = useState(initialMonthlyData);
+  const [editTransactionData, setEditTransactionData] = useState<any>(null);
 
-  // "open-transaction-modal" global event (from header)
   useEffect(() => {
     const handleOpenModal = () => setShowTransactionModal(true);
     document.addEventListener("open-transaction-modal", handleOpenModal);
     return () => document.removeEventListener("open-transaction-modal", handleOpenModal);
   }, []);
 
-  // Calculate financial summary based on transactions
+  useEffect(() => {
+    if (editTransactionData) setShowTransactionModal(true);
+  }, [editTransactionData]);
+
   const financialSummary = transactions.reduce(
     (summary, transaction) => {
       const currentMonth = new Date().getMonth();
@@ -78,12 +80,10 @@ const Index = () => {
     { totalBalance: 0, income: 0, expenses: 0 }
   );
 
-  // Calculate savings rate
   const savingsRate = financialSummary.income > 0 
     ? ((financialSummary.income - financialSummary.expenses) / financialSummary.income * 100).toFixed(1)
     : "0.0";
 
-  // Convert category data for chart
   const categoryChartData = categories.map(cat => {
     const categoryTransactions = transactions.filter(
       t => t.type === "expense" && t.category === cat.name
@@ -92,7 +92,6 @@ const Index = () => {
     return { ...cat, value: totalSpent };
   });
 
-  // Convert budget data for chart
   const budgetData = categories.map(cat => {
     const categoryTransactions = transactions.filter(
       t => t.type === "expense" && t.category === cat.name
@@ -101,8 +100,15 @@ const Index = () => {
     return { name: cat.name, budget: cat.budget, spent: totalSpent };
   });
 
-  // CRUD logic for transactions
   const handleAddTransaction = (tx: any) => {
+    if (editTransactionData) {
+      setTransactions(prev =>
+        prev.map(t => t.id === tx.id ? { ...tx } : t)
+      );
+      setEditTransactionData(null);
+      setShowTransactionModal(false);
+      return;
+    }
     setTransactions(prev => [{ ...tx, id: Date.now().toString() }, ...prev]);
     const currentMonth = new Date().getMonth();
     const monthName = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][currentMonth];
@@ -121,7 +127,15 @@ const Index = () => {
     setShowTransactionModal(false);
   };
 
-  // Format currency as Rupiah (could expand to support other currencies)
+  const handleEditTransaction = (tx: any) => {
+    setEditTransactionData(tx);
+    setShowTransactionModal(true);
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    setTransactions(prev => prev.filter(t => t.id !== id));
+  };
+
   const formatRupiah = (amount: number) =>
     new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -130,7 +144,6 @@ const Index = () => {
       maximumFractionDigits: 0
     }).format(amount);
 
-  // English only; language now in settings
   const t = {
     dashboard: "Dashboard",
     totalBalance: "Total Balance",
@@ -182,7 +195,9 @@ const Index = () => {
             data={monthlyData}
             formatCurrency={formatRupiah}
             title={t.monthlyOverview}
-            gradient // NEW prop to indicate modern style
+            gradient
+            rounded
+            modern
           />
         </div>
         <div className="md:col-span-2">
@@ -190,7 +205,9 @@ const Index = () => {
             data={categoryChartData}
             formatCurrency={formatRupiah}
             title={t.expensesByCategory}
-            glass // NEW prop to indicate modern style
+            glass
+            rounded
+            modern
           />
         </div>
         <div className="md:col-span-3">
@@ -222,6 +239,9 @@ const Index = () => {
             title={t.recentTransactions}
             viewAllLabel={t.viewAll}
             formatCurrency={formatRupiah}
+            enableActions
+            onEdit={handleEditTransaction}
+            onDelete={handleDeleteTransaction}
           />
         </div>
         <div className="md:col-span-1">
@@ -231,8 +251,12 @@ const Index = () => {
       {showTransactionModal && (
         <TransactionForm
           open={showTransactionModal}
-          onOpenChange={setShowTransactionModal}
+          onOpenChange={(open: boolean) => {
+            setShowTransactionModal(open);
+            if (!open) setEditTransactionData(null);
+          }}
           onAddTransaction={handleAddTransaction}
+          editData={editTransactionData}
         />
       )}
     </Dashboard>
@@ -240,5 +264,3 @@ const Index = () => {
 };
 
 export default Index;
-
-// src/pages/Index.tsx is getting very long; consider asking for refactor soon!

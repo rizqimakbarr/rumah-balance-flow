@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,6 @@ export default function Settings() {
   const [profile, setProfile] = useState({ ...userMock });
   const [password, setPassword] = useState("");
   const [currency, setCurrency] = useState("IDR");
-  const [language, setLanguage] = useState("en");
 
   const handleProfileChange = (e: any) => setProfile({ ...profile, [e.target.name]: e.target.value });
   const handleSaveProfile = () => toast.success("Profile updated!");
@@ -26,7 +24,7 @@ export default function Settings() {
     toast.success("Password changed!");
     setPassword("");
   };
-  const handleSaveCurrencyLang = () => toast.success("Settings updated!");
+  const handleSaveCurrency = () => toast.success("Currency updated!");
 
   return (
     <Dashboard>
@@ -63,7 +61,7 @@ export default function Settings() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Localization / Currency</CardTitle>
+            <CardTitle>Currency</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Label htmlFor="currency">Currency</Label>
@@ -76,18 +74,7 @@ export default function Settings() {
                 <SelectItem value="USD">USD ($)</SelectItem>
               </SelectContent>
             </Select>
-
-            <Label htmlFor="lang">Language</Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger id="lang">
-                <SelectValue placeholder="Language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="id">Bahasa Indonesia</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleSaveCurrencyLang}>Save Settings</Button>
+            <Button onClick={handleSaveCurrency}>Save Currency</Button>
           </CardContent>
         </Card>
       </div>
