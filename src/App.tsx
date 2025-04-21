@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./components/ThemeProvider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Transactions from "./pages/Transactions";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -19,7 +21,12 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/settings" element={<Settings />} />
+            {/* Optional placeholder pages for Budget, Family, Export */}
+            <Route path="/budget" element={<div>Budget page (Coming soon)</div>} />
+            <Route path="/family" element={<div>Family page (Coming soon)</div>} />
+            <Route path="/export" element={<div>Export page (Coming soon)</div>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

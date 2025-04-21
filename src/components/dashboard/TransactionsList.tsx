@@ -1,45 +1,18 @@
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-interface Transaction {
-  id: string;
-  date: string;
-  description: string;
-  category: string;
-  amount: number;
-  type: 'income' | 'expense';
-  currency: string;
-}
-
-interface TransactionsListProps {
-  transactions: Transaction[];
-  formatCurrency?: (value: number) => string;
-  title?: string;
-  viewAllLabel?: string;
-}
-
-export default function TransactionsList({ 
-  transactions, 
+export default function TransactionsList({
+  transactions,
   formatCurrency = (value) => `$${value}`,
   title = "Recent Transactions",
-  viewAllLabel = "View All"
-}: TransactionsListProps) {
+  viewAllLabel = "View All",
+  onEdit,
+  onDelete,
+  enableActions = false,
+}: any) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -47,9 +20,11 @@ export default function TransactionsList({
           <CardTitle>{title}</CardTitle>
           <CardDescription>Your latest financial activities</CardDescription>
         </div>
-        <Button variant="outline" size="sm">
-          {viewAllLabel}
-        </Button>
+        {viewAllLabel && (
+          <Button variant="outline" size="sm">
+            {viewAllLabel}
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <Table>
@@ -59,10 +34,11 @@ export default function TransactionsList({
               <TableHead>Description</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="text-right">Amount</TableHead>
+              {enableActions ? <TableHead>Actions</TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions.map((transaction) => (
+            {transactions.map((transaction: any) => (
               <TableRow key={transaction.id}>
                 <TableCell>{transaction.date}</TableCell>
                 <TableCell>{transaction.description}</TableCell>
@@ -74,6 +50,14 @@ export default function TransactionsList({
                 }`}>
                   {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                 </TableCell>
+                {enableActions ? (
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button size="xs" variant="outline" onClick={() => onEdit(transaction)}>Edit</Button>
+                      <Button size="xs" variant="destructive" onClick={() => onDelete(transaction.id)}>Delete</Button>
+                    </div>
+                  </TableCell>
+                ) : null}
               </TableRow>
             ))}
           </TableBody>

@@ -1,78 +1,48 @@
 
-import { useState } from "react";
-import { 
-  SidebarProvider, 
-  Sidebar, 
-  SidebarContent, 
-  SidebarFooter,
-  SidebarHeader,
-  SidebarTrigger,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarGroup
-} from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
-import { 
-  Home, 
-  Inbox, 
-  Users,
-  Calendar,
-  Settings, 
-  Download,
-  Moon,
-  Sun,
-  Plus,
-} from "lucide-react";
+import { Home, Inbox, Users, Calendar, Settings, Download, Moon, Sun, Plus } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface DashboardProps {
   children: React.ReactNode;
 }
 
+const menuItems = [
+  { label: "Dashboard", icon: Home, path: "/" },
+  { label: "Transactions", icon: Inbox, path: "/transactions" },
+  { label: "Budget", icon: Calendar, path: "/budget" },
+  { label: "Family", icon: Users, path: "/family" },
+  { label: "Export", icon: Download, path: "/export" },
+];
+
 export default function Dashboard({ children }: DashboardProps) {
   const { theme, setTheme } = useTheme();
-  
+  const location = useLocation();
+  const navigate = useNavigate();
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <Sidebar>
           <SidebarHeader className="p-4">
-            <h1 className="text-xl font-semibold">rumahtangga.io</h1>
+            <h1 className="text-xl font-semibold font-sans">rumahtangga.io</h1>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton className="flex items-center gap-3">
-                    <Home size={18} />
-                    <span>Dashboard</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton className="flex items-center gap-3">
-                    <Inbox size={18} />
-                    <span>Transactions</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton className="flex items-center gap-3">
-                    <Calendar size={18} />
-                    <span>Budget</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton className="flex items-center gap-3">
-                    <Users size={18} />
-                    <span>Family</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton className="flex items-center gap-3">
-                    <Download size={18} />
-                    <span>Export</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {menuItems.map((item) => (
+                  <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton
+                      className={`flex items-center gap-3 ${location.pathname === item.path ? "bg-accent text-accent-foreground" : ""}`}
+                      onClick={() => navigate(item.path)}
+                    >
+                      <item.icon size={18} />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>
@@ -88,7 +58,10 @@ export default function Dashboard({ children }: DashboardProps) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton className="flex items-center gap-3">
+                <SidebarMenuButton 
+                  className={`flex items-center gap-3 ${location.pathname === "/settings" ? "bg-accent text-accent-foreground" : ""}`}
+                  onClick={() => navigate("/settings")}
+                >
                   <Settings size={18} />
                   <span>Settings</span>
                 </SidebarMenuButton>
@@ -96,27 +69,26 @@ export default function Dashboard({ children }: DashboardProps) {
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        
-        <div className="flex-1 overflow-auto">
+
+        <div className="flex-1 overflow-auto max-h-screen">
           <header className="p-4 flex items-center justify-between border-b">
             <div className="flex items-center gap-2">
               <SidebarTrigger />
-              <h2 className="text-xl font-medium">Dashboard</h2>
+              <h2 className="text-xl font-medium capitalize">{menuItems.find(i => i.path === location.pathname)?.label || "Dashboard"}</h2>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" className="gap-1">
-                <Plus size={16} />
-                <span>Add Transaction</span>
-              </Button>
-              <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
+              {location.pathname === "/" || location.pathname === "/transactions" ? (
+                <Button size="sm" className="gap-1" onClick={() => document.dispatchEvent(new CustomEvent("open-transaction-modal"))}>
+                  <Plus size={16} />
+                  <span className="hidden sm:inline">Add Transaction</span>
+                </Button>
+              ) : null}
+              <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold font-sans">
                 <span className="text-sm">AT</span>
               </div>
             </div>
           </header>
-          
-          <main className="p-6">
-            {children}
-          </main>
+          <main className="p-6">{children}</main>
         </div>
       </div>
     </SidebarProvider>

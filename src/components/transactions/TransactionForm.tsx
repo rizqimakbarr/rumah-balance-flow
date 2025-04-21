@@ -1,24 +1,11 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -30,15 +17,30 @@ interface TransactionFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddTransaction: (transaction: any) => void;
+  editData?: any;
 }
 
-export default function TransactionForm({ open, onOpenChange, onAddTransaction }: TransactionFormProps) {
+export default function TransactionForm({ open, onOpenChange, onAddTransaction, editData }: TransactionFormProps) {
   const [date, setDate] = useState<Date>(new Date());
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("expense");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("IDR");
+
+  useEffect(() => {
+    if (editData) {
+      setDate(new Date(editData.date.split("/").reverse().join("-")));
+      setAmount(editData.amount.toString());
+      setType(editData.type);
+      setCategory(editData.category);
+      setDescription(editData.description || "");
+      setCurrency(editData.currency || "IDR");
+    } else {
+      resetForm();
+    }
+    // eslint-disable-next-line
+  }, [editData, open]);
 
   const handleSubmit = () => {
     if (!amount || !category) {
@@ -47,7 +49,7 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction }
     }
 
     const newTransaction = {
-      id: Date.now().toString(),
+      id: editData?.id || Date.now().toString(),
       date: format(date, "dd/MM/yyyy"),
       amount: parseFloat(amount),
       type,
@@ -57,7 +59,7 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction }
     };
 
     onAddTransaction(newTransaction);
-    toast.success("Transaction added successfully");
+    toast.success(editData ? "Transaction updated" : "Transaction added");
     resetForm();
     onOpenChange(false);
   };
@@ -68,13 +70,11 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction }
     setType("expense");
     setCategory("");
     setDescription("");
+    setCurrency("IDR");
   };
 
   const formatAsRupiah = (value: string) => {
-    // Remove non-digits
     const number = value.replace(/\D/g, "");
-    
-    // Format with thousand separators
     return number.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
@@ -87,7 +87,7 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Transaction</DialogTitle>
+          <DialogTitle>{editData ? "Edit Transaction" : "Add New Transaction"}</DialogTitle>
           <DialogDescription>
             Enter the details of your transaction
           </DialogDescription>
@@ -192,12 +192,14 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction }
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Add Transaction</Button>
+          <Button onClick={handleSubmit}>{editData ? "Update" : "Add"} Transaction</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+// This file is 204 lines long. Please consider asking me to help you refactor it.
