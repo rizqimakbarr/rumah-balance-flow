@@ -1,9 +1,10 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import TransactionsList from "@/components/dashboard/TransactionsList";
 import TransactionForm from "@/components/transactions/TransactionForm";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const getInitialTransactions = () => [
   { id: "1", date: "18/04/2025", description: "Grocery Shopping", category: "Food", amount: 85750, type: "expense", currency: "IDR" },
@@ -23,6 +24,17 @@ export default function Transactions() {
       setEditData(null);
     };
     document.addEventListener("open-transaction-modal", handleOpenModal);
+
+    // This would be where we fetch real data from Supabase
+    // const fetchTransactions = async () => {
+    //   const { data, error } = await supabase
+    //     .from('transactions')
+    //     .select('*')
+    //     .order('date', { ascending: false });
+    //   if (data) setTransactions(data);
+    // };
+    // fetchTransactions();
+
     return () => document.removeEventListener("open-transaction-modal", handleOpenModal);
   }, []);
 
@@ -38,9 +50,29 @@ export default function Transactions() {
     if (editData) {
       setTransactions((prev) => prev.map((item) => (item.id === tx.id ? tx : item)));
       toast.success("Transaction updated.");
+
+      // In a real app with Supabase:
+      // supabase
+      //   .from('transactions')
+      //   .update(tx)
+      //   .eq('id', tx.id)
+      //   .then(({ error }) => {
+      //     if (!error) toast.success("Transaction updated.");
+      //     else toast.error("Failed to update transaction.");
+      //   });
     } else {
-      setTransactions((prev) => [{ ...tx, id: Date.now().toString() }, ...prev]);
+      const newTx = { ...tx, id: Date.now().toString() };
+      setTransactions((prev) => [newTx, ...prev]);
       toast.success("Transaction added.");
+
+      // In a real app with Supabase:
+      // supabase
+      //   .from('transactions')
+      //   .insert([newTx])
+      //   .then(({ error }) => {
+      //     if (!error) toast.success("Transaction added.");
+      //     else toast.error("Failed to add transaction.");
+      //   });
     }
     setShowForm(false);
     setEditData(null);
@@ -49,11 +81,21 @@ export default function Transactions() {
   const handleDelete = (id: string) => {
     setTransactions((prev) => prev.filter((item) => item.id !== id));
     toast.success("Transaction deleted.");
+
+    // In a real app with Supabase:
+    // supabase
+    //   .from('transactions')
+    //   .delete()
+    //   .eq('id', id)
+    //   .then(({ error }) => {
+    //     if (!error) toast.success("Transaction deleted.");
+    //     else toast.error("Failed to delete transaction.");
+    //   });
   };
 
   return (
     <Dashboard>
-      <div className="max-w-2xl mx-auto w-full">
+      <div className="w-full">
         <TransactionsList
           transactions={transactions}
           formatCurrency={formatRupiah}

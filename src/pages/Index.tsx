@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+
+import { useEffect, useState } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import StatsCard from "@/components/dashboard/StatsCard";
 import ExpenseByCategory from "@/components/dashboard/ExpenseByCategory";
@@ -6,11 +7,9 @@ import MonthlyOverview from "@/components/dashboard/MonthlyOverview";
 import SavingsGoal from "@/components/dashboard/SavingsGoal";
 import BudgetUsage from "@/components/dashboard/BudgetUsage";
 import TransactionsList from "@/components/dashboard/TransactionsList";
-import FamilyMembers from "@/components/dashboard/FamilyMembers";
 import TransactionForm from "@/components/transactions/TransactionForm";
-import ExportOptions from "@/components/export/ExportOptions";
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const initialCategories = [
   { name: "Housing", value: 1200000, color: "#3b82f6", budget: 1500000 },
@@ -36,12 +35,6 @@ const initialTransactions = [
   { id: "4", date: "10/04/2025", description: "Movie Night", category: "Entertainment", amount: 32500, type: "expense", currency: "IDR" },
 ];
 
-const initialFamilyMembers = [
-  { id: "1", name: "John Doe", role: "Admin", status: "online" as "online" },
-  { id: "2", name: "Jane Smith", role: "Member", status: "online" as "online" },
-  { id: "3", name: "Mike Johnson", role: "Member", status: "offline" as "offline" }
-];
-
 const Index = () => {
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [transactions, setTransactions] = useState(initialTransactions);
@@ -58,6 +51,19 @@ const Index = () => {
   useEffect(() => {
     if (editTransactionData) setShowTransactionModal(true);
   }, [editTransactionData]);
+
+  useEffect(() => {
+    // This would be the place to fetch real data from Supabase
+    // For example:
+    // const fetchTransactions = async () => {
+    //   const { data, error } = await supabase
+    //     .from('transactions')
+    //     .select('*')
+    //     .order('date', { ascending: false });
+    //   if (data) setTransactions(data);
+    // };
+    // fetchTransactions();
+  }, []);
 
   const financialSummary = transactions.reduce(
     (summary, transaction) => {
@@ -171,25 +177,30 @@ const Index = () => {
           value={formatRupiah(financialSummary.totalBalance)}
           description={t.asOf}
           trend={{ value: 8, isPositive: true }}
+          className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 shadow-xl"
         />
         <StatsCard
           title={t.monthlyIncome}
           value={formatRupiah(financialSummary.income)}
           description={t.thisMonth}
           trend={{ value: 2, isPositive: true }}
+          className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 shadow-xl"
         />
         <StatsCard
           title={t.monthlyExpenses}
           value={formatRupiah(financialSummary.expenses)}
           description={t.thisMonth}
           trend={{ value: 5, isPositive: false }}
+          className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 shadow-xl"
         />
         <StatsCard
           title={t.savingsRate}
           value={`${savingsRate}%`}
           description={t.ofMonthlyIncome}
           trend={{ value: 3, isPositive: true }}
+          className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 shadow-xl"
         />
+
         <div className="md:col-span-2">
           <MonthlyOverview 
             data={monthlyData}
@@ -200,6 +211,7 @@ const Index = () => {
             modern
           />
         </div>
+
         <div className="md:col-span-2">
           <ExpenseByCategory
             data={categoryChartData}
@@ -210,6 +222,7 @@ const Index = () => {
             modern
           />
         </div>
+
         <div className="md:col-span-3">
           <BudgetUsage
             data={budgetData}
@@ -217,6 +230,7 @@ const Index = () => {
             title={t.budgetUsage}
           />
         </div>
+
         <div className="md:col-span-1 space-y-6">
           <SavingsGoal 
             title={t.newCar} 
@@ -231,9 +245,9 @@ const Index = () => {
             target={10000000}
             formatCurrency={formatRupiah}
           />
-          <ExportOptions />
         </div>
-        <div className="md:col-span-3">
+
+        <div className="md:col-span-4">
           <TransactionsList
             transactions={transactions}
             title={t.recentTransactions}
@@ -244,10 +258,8 @@ const Index = () => {
             onDelete={handleDeleteTransaction}
           />
         </div>
-        <div className="md:col-span-1">
-          <FamilyMembers members={initialFamilyMembers} />
-        </div>
       </div>
+      
       {showTransactionModal && (
         <TransactionForm
           open={showTransactionModal}

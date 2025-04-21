@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Transactions from "./pages/Transactions";
 import Settings from "./pages/Settings";
+import Budget from "./pages/Budget";
+import Family from "./pages/Family";
+import Export from "./pages/Export";
 
 const queryClient = new QueryClient();
 
@@ -23,10 +26,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/settings" element={<Settings />} />
-            {/* Optional placeholder pages for Budget, Family, Export */}
-            <Route path="/budget" element={<div>Budget page (Coming soon)</div>} />
-            <Route path="/family" element={<div>Family page (Coming soon)</div>} />
-            <Route path="/export" element={<div>Export page (Coming soon)</div>} />
+            <Route path="/budget" element={<Budget />} />
+            <Route path="/family" element={<Family />} />
+            <Route path="/export" element={<Export />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

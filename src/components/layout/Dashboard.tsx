@@ -27,7 +27,7 @@ export default function Dashboard({ children }: DashboardProps) {
       <div className="min-h-screen flex w-full">
         <Sidebar>
           <SidebarHeader className="p-4">
-            <h1 className="text-xl font-semibold font-sans">rumahtangga.io</h1>
+            <h1 className="text-xl font-semibold font-sans bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">rumahtangga.io</h1>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
@@ -38,7 +38,7 @@ export default function Dashboard({ children }: DashboardProps) {
                       className={`flex items-center gap-3 ${location.pathname === item.path ? "bg-accent text-accent-foreground" : ""}`}
                       onClick={() => navigate(item.path)}
                     >
-                      <item.icon size={18} />
+                      <item.icon size={18} className={location.pathname === item.path ? "text-primary" : ""} />
                       <span>{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -62,7 +62,7 @@ export default function Dashboard({ children }: DashboardProps) {
                   className={`flex items-center gap-3 ${location.pathname === "/settings" ? "bg-accent text-accent-foreground" : ""}`}
                   onClick={() => navigate("/settings")}
                 >
-                  <Settings size={18} />
+                  <Settings size={18} className={location.pathname === "/settings" ? "text-primary" : ""} />
                   <span>Settings</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -71,19 +71,19 @@ export default function Dashboard({ children }: DashboardProps) {
         </Sidebar>
 
         <div className="flex-1 overflow-auto max-h-screen">
-          <header className="p-4 flex items-center justify-between border-b">
+          <header className="p-4 flex items-center justify-between border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
             <div className="flex items-center gap-2">
               <SidebarTrigger />
               <h2 className="text-xl font-medium capitalize">{menuItems.find(i => i.path === location.pathname)?.label || "Dashboard"}</h2>
             </div>
             <div className="flex items-center gap-2">
               {location.pathname === "/" || location.pathname === "/transactions" ? (
-                <Button size="sm" className="gap-1" onClick={() => document.dispatchEvent(new CustomEvent("open-transaction-modal"))}>
+                <Button size="sm" className="gap-1 bg-primary hover:bg-primary/90" onClick={() => document.dispatchEvent(new CustomEvent("open-transaction-modal"))}>
                   <Plus size={16} />
                   <span className="hidden sm:inline">Add Transaction</span>
                 </Button>
               ) : null}
-              <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold font-sans">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white flex items-center justify-center font-bold font-sans">
                 <span className="text-sm">AT</span>
               </div>
             </div>

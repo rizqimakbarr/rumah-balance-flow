@@ -24,8 +24,8 @@ export default function TransactionsList({
   enableActions = false,
 }: TransactionsListProps) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="overflow-hidden shadow-md">
+      <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-br from-background to-muted/30">
         <div>
           <CardTitle>{title}</CardTitle>
           <CardDescription>Your latest financial activities</CardDescription>
@@ -36,42 +36,46 @@ export default function TransactionsList({
           </Button>
         )}
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              {enableActions ? <TableHead>Actions</TableHead> : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map((transaction: any) => (
-              <TableRow key={transaction.id}>
-                <TableCell>{transaction.date}</TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{transaction.category}</Badge>
-                </TableCell>
-                <TableCell className={`text-right font-medium ${
-                  transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
-                }`}>
-                  {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                </TableCell>
-                {enableActions ? (
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => onEdit && onEdit(transaction)}>Edit</Button>
-                      <Button size="sm" variant="destructive" onClick={() => onDelete && onDelete(transaction.id)}>Delete</Button>
-                    </div>
-                  </TableCell>
-                ) : null}
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[120px]">Date</TableHead>
+                <TableHead className="text-left">Description</TableHead>
+                <TableHead className="text-left">Category</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                {enableActions ? <TableHead className="w-[150px]">Actions</TableHead> : null}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {transactions.map((transaction: any) => (
+                <TableRow key={transaction.id} className="hover:bg-muted/50">
+                  <TableCell className="font-medium">{transaction.date}</TableCell>
+                  <TableCell className="text-left">{transaction.description}</TableCell>
+                  <TableCell className="text-left">
+                    <Badge variant="outline" className="font-medium">
+                      {transaction.category}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className={`text-right font-medium ${
+                    transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                  }`}>
+                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                  </TableCell>
+                  {enableActions ? (
+                    <TableCell>
+                      <div className="flex gap-2 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => onEdit && onEdit(transaction)}>Edit</Button>
+                        <Button size="sm" variant="destructive" onClick={() => onDelete && onDelete(transaction.id)}>Delete</Button>
+                      </div>
+                    </TableCell>
+                  ) : null}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
