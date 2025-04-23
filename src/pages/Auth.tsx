@@ -6,38 +6,75 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const toggleMode = () => setIsLogin(!isLogin);
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setError(null);
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
-      if (error) toast.error(error.message);
-      else {
-        toast.success("Logged in!");
-        navigate("/");
+    setError(null);
+    
+    try {
+      if (isLogin) {
+        const { data, error } = await supabase.auth.signInWithPassword({ 
+          email: form.email, 
+          password: form.password 
+        });
+        
+        if (error) {
+          setError(error.message);
+          toast.error("Login failed");
+        } else if (data.user) {
+          toast.success("Logged in successfully!");
+          navigate("/");
+        }
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: { 
+            data: { full_name: form.name },
+            emailRedirectTo: window.location.origin
+          },
+        });
+        
+        if (error) {
+          setError(error.message);
+          toast.error("Registration failed");
+        } else if (data.user) {
+          toast.success("Registration successful!");
+          // Auto-login after registration since we've disabled email confirmation
+          const { error: loginError } = await supabase.auth.signInWithPassword({ 
+            email: form.email, 
+            password: form.password 
+          });
+          
+          if (!loginError) {
+            navigate("/");
+          } else {
+            setIsLogin(true);
+            toast.info("Please login with your new account");
+          }
+        }
       }
-    } else {
-      const { data, error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: { data: { full_name: form.name } },
-      });
-      if (error) toast.error(error.message);
-      else {
-        toast.success("Registration successful! Check your email to confirm.");
-        setIsLogin(true);
-      }
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred");
+      toast.error("Authentication error");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -50,6 +87,11 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <form className="space-y-4" onSubmit={handleSubmit}>
             {!isLogin && (
               <Input
@@ -57,6 +99,7 @@ export default function Auth() {
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
                 required
+                disabled={loading}
               />
             )}
             <Input
@@ -65,6 +108,7 @@ export default function Auth() {
               value={form.email}
               onChange={e => setForm({ ...form, email: e.target.value })}
               required
+              disabled={loading}
             />
             <Input
               placeholder="Password"
@@ -72,9 +116,22 @@ export default function Auth() {
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
               required
+              disabled={loading}
+              minLength={6}
             />
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? "Please wait..." : (isLogin ? "Sign In" : "Sign Up")}
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Please wait...
+                </>
+              ) : (
+                isLogin ? "Sign In" : "Sign Up"
+              )}
             </Button>
           </form>
           <div className="text-center mt-4">
@@ -82,6 +139,7 @@ export default function Auth() {
               type="button" 
               className="text-primary underline text-sm" 
               onClick={toggleMode}
+              disabled={loading}
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
