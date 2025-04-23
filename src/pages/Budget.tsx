@@ -1,169 +1,159 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Plus, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
-import BudgetUsage from "@/components/dashboard/BudgetUsage";
-
-const initialCategories = [
-  { name: "Housing", budget: 1500000, color: "#3b82f6", spent: 1200000 },
-  { name: "Food", budget: 400000, color: "#10b981", spent: 450000 },
-  { name: "Transport", budget: 350000, color: "#f59e0b", spent: 300000 },
-  { name: "Utilities", budget: 200000, color: "#8b5cf6", spent: 150000 },
-  { name: "Entertainment", budget: 150000, color: "#ec4899", spent: 200000 },
-];
 
 export default function Budget() {
-  const [budgetCategories, setBudgetCategories] = useState(initialCategories);
-  const [newCategory, setNewCategory] = useState({ name: "", budget: "" });
+  const { user } = useAuth();
+  const [budgetCategories, setBudgetCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", budget: "", color: "#6366f1" });
 
-  const formatRupiah = (amount: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+    supabase.from("budget_categories").select("*").eq("user_id", user.id).then(({ data }) => {
+      setBudgetCategories(data || []);
+      setLoading(false);
+    });
+  }, [user]);
 
-  const handleAddCategory = () => {
-    if (newCategory.name && newCategory.budget) {
-      const budget = parseInt(newCategory.budget);
-      if (isNaN(budget) || budget <= 0) {
-        toast.error("Budget amount must be a positive number");
-        return;
-      }
-
-      const randomColor = `#${Math.floor(Math.random()*16777215).toString(16)}`;
-      setBudgetCategories([...budgetCategories, { 
-        name: newCategory.name, 
-        budget: budget, 
-        color: randomColor,
-        spent: 0
-      }]);
-      setNewCategory({ name: "", budget: "" });
-      toast.success(`Added budget for ${newCategory.name}`);
-    } else {
-      toast.error("Please provide both category name and budget amount");
+  const handleAddCategory = async () => {
+    if (!form.name || !form.budget) {
+      toast.error("Please provide name and budget.");
+      return;
+    }
+    const budget = parseInt(form.budget);
+    if (isNaN(budget) || budget <= 0) {
+      toast.error("Budget must be positive number");
+      return;
+    }
+    const { error, data } = await supabase.from("budget_categories").insert([
+      {
+        user_id: user.id,
+        name: form.name,
+        budget: budget,
+        color: form.color,
+      },
+    ]);
+    if (error) toast.error(error.message);
+    else {
+      setBudgetCategories([...budgetCategories, { ...form, budget, color: form.color }]);
+      setModalOpen(false);
+      setForm({ name: "", budget: "", color: "#6366f1" });
+      toast.success("Category added.");
     }
   };
 
-  const handleUpdateBudget = (index: number, newBudget: string) => {
+  const handleDeleteCategory = async (id: string) => {
+    const { error } = await supabase.from('budget_categories').delete().eq('id', id);
+    if (!error) setBudgetCategories(budgetCategories.filter((c: any) => c.id !== id));
+    toast.success("Category deleted.");
+  };
+
+  const handleUpdateBudget = async (id: string, newBudget: string) => {
     const budget = parseInt(newBudget);
-    if (!isNaN(budget) && budget > 0) {
-      const updatedCategories = [...budgetCategories];
-      updatedCategories[index] = { ...updatedCategories[index], budget };
-      setBudgetCategories(updatedCategories);
+    if (isNaN(budget) || budget <= 0) {
+      toast.error("Budget must be positive number");
+      return;
     }
+    const { error } = await supabase.from('budget_categories').update({ budget }).eq('id', id);
+    if (!error) setBudgetCategories(budgetCategories.map((c: any) => c.id === id ? { ...c, budget } : c));
+    toast.success("Budget updated.");
   };
 
-  const handleDeleteCategory = (index: number) => {
-    const updatedCategories = [...budgetCategories];
-    updatedCategories.splice(index, 1);
-    setBudgetCategories(updatedCategories);
-    toast.success("Category removed");
-  };
+  const formatRupiah = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 
   return (
     <Dashboard>
-      <div className="grid grid-cols-1 gap-6">
-        <Card className="shadow-md">
-          <CardHeader className="bg-gradient-to-br from-background to-muted/30">
-            <CardTitle>Budget Overview</CardTitle>
-            <CardDescription>View and manage your monthly budget allocations</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <BudgetUsage
-              data={budgetCategories}
-              formatCurrency={formatRupiah}
-              title=""
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-md">
+      <div>
+        <Card>
           <CardHeader className="bg-gradient-to-br from-background to-muted/30">
             <CardTitle>Budget Categories</CardTitle>
-            <CardDescription>Manage your budget categories and allocations</CardDescription>
+            <CardDescription>Track and manage your budget allocations</CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid gap-6">
-              {budgetCategories.map((category, index) => {
-                const percentage = (category.spent / category.budget) * 100;
-                const isOverBudget = percentage > 100;
-                
-                return (
-                  <div key={index} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label>{category.name}</Label>
-                      <div className="flex gap-2 items-center">
+          <CardContent>
+            <div className="flex justify-end mb-4">
+              <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-1">
+                    <Plus className="h-4 w-4" />
+                    Add Category
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Budget Category</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <Label htmlFor="category-name">Category Name</Label>
+                    <Input
+                      id="category-name"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="e.g. Groceries"
+                    />
+                    <Label htmlFor="budget-amount">Budget Amount</Label>
+                    <Input
+                      id="budget-amount"
+                      value={form.budget}
+                      onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                      placeholder="e.g. 500000"
+                      type="number"
+                    />
+                  </div>
+                  <Button onClick={handleAddCategory} className="w-full mt-4">
+                    Add
+                  </Button>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="overflow-x-auto rounded-lg border bg-white dark:bg-background">
+              <table className="min-w-full text-sm table-auto">
+                <thead className="bg-muted/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Category</th>
+                    <th className="px-4 py-3 text-right">Budget</th>
+                    <th className="px-4 py-3 text-right">Spent</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {budgetCategories.map((category: any) => (
+                    <tr key={category.id} className="">
+                      <td className="px-4 py-2 font-medium">{category.name}</td>
+                      <td className="px-4 py-2 text-right">
                         <Input
-                          value={category.budget}
-                          onChange={(e) => handleUpdateBudget(index, e.target.value)}
-                          className="w-32 text-right"
                           type="number"
+                          value={category.budget}
+                          onChange={(e) => handleUpdateBudget(category.id, e.target.value)}
+                          className="w-28 bg-muted"
                         />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteCategory(index)}
-                        >
+                      </td>
+                      <td className="px-4 py-2 text-right text-muted-foreground">
+                        {formatRupiah(category.spent || 0)}
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteCategory(category.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      </div>
-                    </div>
-                    <Progress 
-                      value={Math.min(percentage, 100)} 
-                      className={isOverBudget ? "bg-red-200" : ""}
-                    />
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Spent: {formatRupiah(category.spent)}</span>
-                      <span className={isOverBudget ? "text-red-500 font-medium" : ""}>
-                        {isOverBudget ? "Over budget: " : "Remaining: "}
-                        {isOverBudget 
-                          ? formatRupiah(category.spent - category.budget)
-                          : formatRupiah(category.budget - category.spent)
-                        }
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              <div className="pt-4 border-t">
-                <div className="grid grid-cols-[1fr,auto] gap-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor="category-name">Category Name</Label>
-                      <Input
-                        id="category-name"
-                        value={newCategory.name}
-                        onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
-                        placeholder="e.g. Groceries"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="budget-amount">Budget Amount</Label>
-                      <Input
-                        id="budget-amount"
-                        value={newCategory.budget}
-                        onChange={(e) => setNewCategory({...newCategory, budget: e.target.value})}
-                        placeholder="e.g. 500000"
-                        type="number"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={handleAddCategory} className="mb-px gap-1">
-                      <Plus className="h-4 w-4" />
-                      Add Category
-                    </Button>
-                  </div>
-                </div>
-              </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {budgetCategories.length === 0 && (
+                    <tr><td colSpan={4} className="text-center py-6 text-muted-foreground">No categories yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>

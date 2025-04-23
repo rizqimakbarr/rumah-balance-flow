@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,50 +9,82 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Pencil } from "lucide-react";
-
-const initialFamilyMembers = [
-  { id: "1", name: "John Doe", role: "Admin", status: "online", avatarUrl: "" },
-  { id: "2", name: "Jane Smith", role: "Member", status: "online", avatarUrl: "" },
-  { id: "3", name: "Mike Johnson", role: "Member", status: "offline", avatarUrl: "" }
-];
+import { Plus, Pencil, Lock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Family() {
-  const [members, setMembers] = useState(initialFamilyMembers);
+  const { user } = useAuth();
+  const [members, setMembers] = useState<any[]>([]);
   const [editMember, setEditMember] = useState<any>(null);
   const [newMember, setNewMember] = useState({ name: "", role: "Member", status: "offline" });
   const [openNewDialog, setOpenNewDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [password, setPassword] = useState({ current: "", new: "", confirm: "" });
 
-  const handleAddMember = () => {
-    if (newMember.name) {
-      const member = {
-        ...newMember,
-        id: Date.now().toString(),
-        avatarUrl: ""
-      };
-      setMembers([...members, member]);
+  useEffect(() => {
+    supabase.from("profiles").select("*").then(({ data }) => setMembers(data || []));
+  }, []);
+
+  const handleAddMember = async () => {
+    if (!newMember.name) {
+      toast.error("Name is required");
+      return;
+    }
+    // Only "admin" could add members - but for now just allow insert
+    const { error } = await supabase.from("profiles").insert([
+      { name: newMember.name, role: newMember.role, status: newMember.status, avatar_url: null, id: crypto.randomUUID() },
+    ]);
+    if (error) toast.error(error.message);
+    else {
+      setMembers([...members, { ...newMember, id: crypto.randomUUID() }]);
       setNewMember({ name: "", role: "Member", status: "offline" });
       setOpenNewDialog(false);
       toast.success("Family member added");
-    } else {
-      toast.error("Name is required");
     }
   };
 
-  const handleEditMember = () => {
-    if (editMember && editMember.name) {
-      setMembers(members.map(m => m.id === editMember.id ? editMember : m));
+  const handleEditMember = async () => {
+    if (!editMember?.id || !editMember.name) {
+      toast.error("Name is required");
+      return;
+    }
+    const { error } = await supabase.from("profiles").update({
+      name: editMember.name,
+      role: editMember.role,
+      status: editMember.status,
+    }).eq("id", editMember.id);
+    if (error) toast.error(error.message);
+    else {
+      setMembers(members.map((m) => m.id === editMember.id ? editMember : m));
       setOpenEditDialog(false);
       toast.success("Member updated");
-    } else {
-      toast.error("Name is required");
     }
   };
 
-  const handleDeleteMember = (id: string) => {
-    setMembers(members.filter(m => m.id !== id));
+  const handleDeleteMember = async (id: string) => {
+    const { error } = await supabase.from("profiles").delete().eq("id", id);
+    if (!error) setMembers(members.filter(m => m.id !== id));
     toast.success("Member removed");
+  };
+
+  const handleChangePassword = async () => {
+    if (password.new !== password.confirm) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    if (!password.current || !password.new) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: password.new });
+    if (error) toast.error(error.message);
+    else {
+      setPassword({ current: "", new: "", confirm: "" });
+      setShowPasswordModal(false);
+      toast.success("Password changed!");
+    }
   };
 
   return (
@@ -87,10 +118,7 @@ export default function Family() {
                   </div>
                   <div>
                     <Label htmlFor="role">Role</Label>
-                    <Select 
-                      value={newMember.role} 
-                      onValueChange={(value) => setNewMember({...newMember, role: value})}
-                    >
+                    <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
                       <SelectTrigger id="role">
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
@@ -103,10 +131,7 @@ export default function Family() {
                   </div>
                   <div>
                     <Label htmlFor="status">Status</Label>
-                    <Select 
-                      value={newMember.status} 
-                      onValueChange={(value: "online" | "offline") => setNewMember({...newMember, status: value})}
-                    >
+                    <Select value={newMember.status} onValueChange={(value: "online" | "offline") => setNewMember({...newMember, status: value})}>
                       <SelectTrigger id="status">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
@@ -122,9 +147,44 @@ export default function Family() {
                 </div>
               </DialogContent>
             </Dialog>
+            <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+              <DialogTrigger asChild>
+                <Button variant="secondary" className="gap-1">
+                  <Lock className="h-4 w-4" /> Change Password
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Change Password</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Input
+                    type="password"
+                    placeholder="Current Password"
+                    value={password.current}
+                    onChange={e => setPassword({ ...password, current: e.target.value })}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="New Password"
+                    value={password.new}
+                    onChange={e => setPassword({ ...password, new: e.target.value })}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Confirm New Password"
+                    value={password.confirm}
+                    onChange={e => setPassword({ ...password, confirm: e.target.value })}
+                  />
+                  <Button className="w-full" onClick={handleChangePassword}>
+                    Update Password
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
+            <div className="space-y-6 text-left">
               {members.map((member) => (
                 <div key={member.id} className="flex items-center justify-between border-b pb-4">
                   <div className="flex items-center gap-4">
@@ -150,14 +210,7 @@ export default function Family() {
                       if (!open) setEditMember(null);
                     }}>
                       <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            setEditMember(member);
-                            setOpenEditDialog(true);
-                          }}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => { setEditMember(member); setOpenEditDialog(true); }}>
                           <Pencil className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
@@ -178,10 +231,7 @@ export default function Family() {
                             </div>
                             <div>
                               <Label htmlFor="edit-role">Role</Label>
-                              <Select 
-                                value={editMember.role} 
-                                onValueChange={(value) => setEditMember({...editMember, role: value})}
-                              >
+                              <Select value={editMember.role} onValueChange={(value) => setEditMember({...editMember, role: value})}>
                                 <SelectTrigger id="edit-role">
                                   <SelectValue placeholder="Select role" />
                                 </SelectTrigger>
@@ -194,10 +244,7 @@ export default function Family() {
                             </div>
                             <div>
                               <Label htmlFor="edit-status">Status</Label>
-                              <Select 
-                                value={editMember.status} 
-                                onValueChange={(value: "online" | "offline") => setEditMember({...editMember, status: value})}
-                              >
+                              <Select value={editMember.status} onValueChange={(value: "online" | "offline") => setEditMember({...editMember, status: value})}>
                                 <SelectTrigger id="edit-status">
                                   <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
@@ -210,30 +257,22 @@ export default function Family() {
                           </div>
                         )}
                         <div className="flex justify-between">
-                          <Button 
-                            variant="destructive" 
-                            onClick={() => {
-                              handleDeleteMember(member.id);
-                              setOpenEditDialog(false);
-                            }}
-                          >
+                          <Button variant="destructive" onClick={() => { handleDeleteMember(member.id); setOpenEditDialog(false); }}>
                             Delete
                           </Button>
-                          <Button onClick={handleEditMember}>Save Changes</Button>
+                          <Button onClick={handleEditMember}>
+                            Save Changes
+                          </Button>
                         </div>
                       </DialogContent>
                     </Dialog>
                   </div>
                 </div>
               ))}
-              
               {members.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>No family members added yet.</p>
-                  <Button 
-                    variant="link" 
-                    onClick={() => setOpenNewDialog(true)}
-                  >
+                  <Button variant="link" onClick={() => setOpenNewDialog(true)}>
                     Add your first family member
                   </Button>
                 </div>

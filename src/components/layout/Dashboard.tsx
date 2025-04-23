@@ -1,9 +1,9 @@
-
 import { SidebarProvider, Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { Home, Inbox, Users, Calendar, Settings, Download, Moon, Sun, Plus } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardProps {
   children: React.ReactNode;
@@ -21,6 +21,12 @@ export default function Dashboard({ children }: DashboardProps) {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  }
 
   return (
     <SidebarProvider>
@@ -64,6 +70,14 @@ export default function Dashboard({ children }: DashboardProps) {
                 >
                   <Settings size={18} className={location.pathname === "/settings" ? "text-primary" : ""} />
                   <span>Settings</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  className={`flex items-center gap-3`}
+                  onClick={handleLogout}
+                >
+                  <span>Logout</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
