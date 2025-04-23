@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,70 +21,152 @@ export default function Family() {
   const [newMember, setNewMember] = useState({ name: "", role: "Member", status: "offline" });
   const [openNewDialog, setOpenNewDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [password, setPassword] = useState({ current: "", new: "", confirm: "" });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchMembers = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*");
+        
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error: any) {
+      toast.error("Failed to load family members: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    supabase.from("profiles").select("*").then(({ data }) => setMembers(data || []));
-  }, []);
+    if (user) {
+      fetchMembers();
+    }
+  }, [user]);
 
   const handleAddMember = async () => {
+    if (!user) {
+      toast.error("You need to be logged in to perform this action");
+      return;
+    }
+    
     if (!newMember.name) {
       toast.error("Name is required");
       return;
     }
-    // Only "admin" could add members - but for now just allow insert
-    const { error } = await supabase.from("profiles").insert([
-      { name: newMember.name, role: newMember.role, status: newMember.status, avatar_url: null, id: crypto.randomUUID() },
-    ]);
-    if (error) toast.error(error.message);
-    else {
-      setMembers([...members, { ...newMember, id: crypto.randomUUID() }]);
+    
+    try {
+      // Generate a unique ID for the new profile
+      const profileId = crypto.randomUUID();
+      
+      // Insert the new family member
+      const { error } = await supabase
+        .from("profiles")
+        .insert([{ 
+          id: profileId, 
+          name: newMember.name, 
+          role: newMember.role, 
+          status: newMember.status
+        }]);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setMembers(prev => [...prev, { 
+        id: profileId, 
+        name: newMember.name, 
+        role: newMember.role, 
+        status: newMember.status 
+      }]);
+      
       setNewMember({ name: "", role: "Member", status: "offline" });
       setOpenNewDialog(false);
-      toast.success("Family member added");
+      toast.success("Family member added successfully");
+    } catch (error: any) {
+      toast.error("Failed to add family member: " + error.message);
     }
   };
 
   const handleEditMember = async () => {
-    if (!editMember?.id || !editMember.name) {
+    if (!user || !editMember?.id) {
+      toast.error("You need to be logged in to perform this action");
+      return;
+    }
+    
+    if (!editMember.name) {
       toast.error("Name is required");
       return;
     }
-    const { error } = await supabase.from("profiles").update({
-      name: editMember.name,
-      role: editMember.role,
-      status: editMember.status,
-    }).eq("id", editMember.id);
-    if (error) toast.error(error.message);
-    else {
-      setMembers(members.map((m) => m.id === editMember.id ? editMember : m));
+    
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          name: editMember.name,
+          role: editMember.role,
+          status: editMember.status,
+        })
+        .eq("id", editMember.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setMembers(prev => prev.map(m => m.id === editMember.id ? editMember : m));
       setOpenEditDialog(false);
-      toast.success("Member updated");
+      toast.success("Member updated successfully");
+    } catch (error: any) {
+      toast.error("Failed to update member: " + error.message);
     }
   };
 
   const handleDeleteMember = async (id: string) => {
-    const { error } = await supabase.from("profiles").delete().eq("id", id);
-    if (!error) setMembers(members.filter(m => m.id !== id));
-    toast.success("Member removed");
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setMembers(prev => prev.filter(m => m.id !== id));
+      toast.success("Member removed successfully");
+    } catch (error: any) {
+      toast.error("Failed to remove member: " + error.message);
+    }
   };
 
   const handleChangePassword = async () => {
+    if (!user) {
+      toast.error("You need to be logged in to perform this action");
+      return;
+    }
+    
     if (password.new !== password.confirm) {
       toast.error("New passwords do not match");
       return;
     }
+    
     if (!password.current || !password.new) {
       toast.error("Please fill in all fields");
       return;
     }
-    const { error } = await supabase.auth.updateUser({ password: password.new });
-    if (error) toast.error(error.message);
-    else {
+    
+    try {
+      const { error } = await supabase.auth.updateUser({ 
+        password: password.new 
+      });
+      
+      if (error) throw error;
+      
       setPassword({ current: "", new: "", confirm: "" });
-      setShowPasswordModal(false);
-      toast.success("Password changed!");
+      toast.success("Password changed successfully!");
+    } catch (error: any) {
+      toast.error("Failed to change password: " + error.message);
     }
   };
 
@@ -96,92 +179,59 @@ export default function Family() {
               <CardTitle>Family Members</CardTitle>
               <CardDescription>Manage your household members</CardDescription>
             </div>
-            <Dialog open={openNewDialog} onOpenChange={setOpenNewDialog}>
-              <DialogTrigger asChild>
-                <Button className="gap-1">
-                  <Plus className="h-4 w-4" />
-                  Add Member
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Family Member</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={newMember.name}
-                      onChange={(e) => setNewMember({...newMember, name: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
-                      <SelectTrigger id="role">
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Admin">Admin</SelectItem>
-                        <SelectItem value="Member">Member</SelectItem>
-                        <SelectItem value="Viewer">Viewer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={newMember.status} onValueChange={(value: "online" | "offline") => setNewMember({...newMember, status: value})}>
-                      <SelectTrigger id="status">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="online">Online</SelectItem>
-                        <SelectItem value="offline">Offline</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <Button onClick={handleAddMember}>Add Member</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
-              <DialogTrigger asChild>
-                <Button variant="secondary" className="gap-1">
-                  <Lock className="h-4 w-4" /> Change Password
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Change Password</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Input
-                    type="password"
-                    placeholder="Current Password"
-                    value={password.current}
-                    onChange={e => setPassword({ ...password, current: e.target.value })}
-                  />
-                  <Input
-                    type="password"
-                    placeholder="New Password"
-                    value={password.new}
-                    onChange={e => setPassword({ ...password, new: e.target.value })}
-                  />
-                  <Input
-                    type="password"
-                    placeholder="Confirm New Password"
-                    value={password.confirm}
-                    onChange={e => setPassword({ ...password, confirm: e.target.value })}
-                  />
-                  <Button className="w-full" onClick={handleChangePassword}>
-                    Update Password
+            <div className="flex gap-2">
+              <Dialog open={openNewDialog} onOpenChange={setOpenNewDialog}>
+                <DialogTrigger asChild>
+                  <Button className="gap-1">
+                    <Plus className="h-4 w-4" />
+                    Add Member
                   </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Family Member</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div>
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        value={newMember.name}
+                        onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="role">Role</Label>
+                      <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
+                        <SelectTrigger id="role">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Admin">Admin</SelectItem>
+                          <SelectItem value="Member">Member</SelectItem>
+                          <SelectItem value="Viewer">Viewer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="status">Status</Label>
+                      <Select value={newMember.status} onValueChange={(value: "online" | "offline") => setNewMember({...newMember, status: value})}>
+                        <SelectTrigger id="status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="online">Online</SelectItem>
+                          <SelectItem value="offline">Offline</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={handleAddMember}>Add Member</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-6 text-left">
@@ -189,9 +239,9 @@ export default function Family() {
                 <div key={member.id} className="flex items-center justify-between border-b pb-4">
                   <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={member.avatarUrl} alt={member.name} />
+                      <AvatarImage src={member.avatar_url} alt={member.name} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
-                        {member.name.split(' ').map(name => name[0]).join('')}
+                        {member.name.split(' ').map((name: string) => name[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -254,6 +304,24 @@ export default function Family() {
                                 </SelectContent>
                               </Select>
                             </div>
+                            {/* Show Change Password option only in Edit modal */}
+                            {editMember.id === user?.id && (
+                              <div>
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full gap-1"
+                                  onClick={() => {
+                                    // Open password change dialog logic here
+                                    const passwordDialog = document.getElementById('password-dialog');
+                                    if (passwordDialog) {
+                                      (passwordDialog as any).showModal();
+                                    }
+                                  }}
+                                >
+                                  <Lock className="h-4 w-4" /> Change Password
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         )}
                         <div className="flex justify-between">
@@ -269,7 +337,7 @@ export default function Family() {
                   </div>
                 </div>
               ))}
-              {members.length === 0 && (
+              {members.length === 0 && !isLoading && (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>No family members added yet.</p>
                   <Button variant="link" onClick={() => setOpenNewDialog(true)}>
@@ -277,10 +345,58 @@ export default function Family() {
                   </Button>
                 </div>
               )}
+              {isLoading && (
+                <div className="text-center py-8">
+                  <p>Loading members...</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Password change dialog */}
+      <Dialog open={password.current || password.new || password.confirm ? true : false} onOpenChange={(isOpen) => {
+        if (!isOpen) setPassword({ current: "", new: "", confirm: "" });
+      }}>
+        <DialogContent id="password-dialog">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="current-password">Current Password</Label>
+              <Input
+                id="current-password"
+                type="password"
+                value={password.current}
+                onChange={e => setPassword({ ...password, current: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={password.new}
+                onChange={e => setPassword({ ...password, new: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={password.confirm}
+                onChange={e => setPassword({ ...password, confirm: e.target.value })}
+              />
+            </div>
+            <Button className="w-full" onClick={handleChangePassword}>
+              Update Password
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dashboard>
   );
 }

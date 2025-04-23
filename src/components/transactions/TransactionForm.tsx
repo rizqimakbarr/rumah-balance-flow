@@ -12,6 +12,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TransactionFormProps {
   open: boolean;
@@ -21,12 +23,28 @@ interface TransactionFormProps {
 }
 
 export default function TransactionForm({ open, onOpenChange, onAddTransaction, editData }: TransactionFormProps) {
+  const { user } = useAuth();
   const [date, setDate] = useState<Date>(new Date());
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("expense");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("IDR");
+  const [savingsGoals, setSavingsGoals] = useState<any[]>([]);
+  
+  // Fetch savings goals to suggest in the description when "Saving" category is selected
+  useEffect(() => {
+    if (user && open && category === "Saving") {
+      supabase.from('savings_goals')
+        .select('title')
+        .eq('user_id', user.id)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setSavingsGoals(data);
+          }
+        });
+    }
+  }, [user, category, open]);
 
   useEffect(() => {
     if (editData) {
@@ -39,7 +57,6 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
     } else {
       resetForm();
     }
-    // eslint-disable-next-line
   }, [editData, open]);
 
   const handleSubmit = () => {
@@ -59,9 +76,6 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
     };
 
     onAddTransaction(newTransaction);
-    toast.success(editData ? "Transaction updated" : "Transaction added");
-    resetForm();
-    onOpenChange(false);
   };
 
   const resetForm = () => {
@@ -81,6 +95,18 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/\D/g, "");
     setAmount(rawValue);
+  };
+  
+  const handleCategoryChange = (value: string) => {
+    setCategory(value);
+    
+    // If "Saving" is selected and there are savings goals, show a helper message
+    if (value === "Saving" && savingsGoals.length > 0) {
+      toast.info(
+        "Include a savings goal name in the description to automatically update its progress", 
+        { duration: 5000 }
+      );
+    }
   };
 
   return (
@@ -164,7 +190,7 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
 
             <div className="col-span-2">
               <Label htmlFor="category">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
+              <Select value={category} onValueChange={handleCategoryChange}>
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -174,20 +200,39 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
                   <SelectItem value="Transport">Transport</SelectItem>
                   <SelectItem value="Utilities">Utilities</SelectItem>
                   <SelectItem value="Entertainment">Entertainment</SelectItem>
+                  <SelectItem value="Saving">Saving</SelectItem>
+                  <SelectItem value="Salary">Salary</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="col-span-4">
-              <Label htmlFor="description">Description (optional)</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea 
                 id="description" 
                 value={description} 
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter description" 
+                placeholder={category === "Saving" ? "Include goal name to update progress (e.g. New Car)" : "Enter description"} 
                 className="resize-none"
               />
+              {category === "Saving" && savingsGoals.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-muted-foreground mb-1">Available goals:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {savingsGoals.map(goal => (
+                      <Badge 
+                        key={goal.title} 
+                        variant="outline" 
+                        className="cursor-pointer hover:bg-accent"
+                        onClick={() => setDescription(goal.title)}
+                      >
+                        {goal.title}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -201,5 +246,3 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
     </Dialog>
   );
 }
-
-// This file is 204 lines long. Please consider asking me to help you refactor it.
