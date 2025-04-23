@@ -119,6 +119,7 @@ export default function Budget() {
                     <Progress 
                       value={Math.min(percentage, 100)} 
                       className={isOverBudget ? "bg-red-200" : ""}
+                      indicatorClassName={isOverBudget ? "bg-red-500" : ""}
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Spent: {formatRupiah(category.spent)}</span>
