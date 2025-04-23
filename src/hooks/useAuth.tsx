@@ -2,7 +2,23 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const AuthContext = createContext<any>(null);
+// Define the type for our auth context
+type AuthContextType = {
+  user: any | null;
+  session: any | null;
+  loading: boolean;
+  setUser: (user: any | null) => void;
+  setSession: (session: any | null) => void;
+};
+
+// Create context with a default value matching the type
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  session: null,
+  loading: true,
+  setUser: () => {},
+  setSession: () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);

@@ -14,13 +14,23 @@ import Family from "./pages/Family";
 import Export from "./pages/Export";
 import Auth from "./pages/Auth";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  return user ? <>{children}</> : <Navigate to="/auth" />;
+  const auth = useAuth();
+  
+  // Show loading spinner while auth state is being determined
+  if (auth.loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  return auth.user ? <>{children}</> : <Navigate to="/auth" />;
 }
 
 const App = () => (
