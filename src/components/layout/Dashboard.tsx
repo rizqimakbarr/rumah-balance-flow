@@ -1,4 +1,3 @@
-
 import { SidebarProvider, Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
@@ -15,6 +14,7 @@ const menuItems = [
   { label: "Dashboard", icon: Home, path: "/" },
   { label: "Transactions", icon: Inbox, path: "/transactions" },
   { label: "Budget", icon: Calendar, path: "/budget" },
+  { label: "Savings", icon: Circle, path: "/savings" },
   { label: "Family", icon: Users, path: "/family" },
   { label: "Export", icon: Download, path: "/export" },
 ];

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import Budget from "./pages/Budget";
 import Family from "./pages/Family";
 import Export from "./pages/Export";
 import Auth from "./pages/Auth";
+import Savings from "./pages/Savings";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -49,6 +49,7 @@ const App = () => (
               <Route path="/budget" element={<PrivateRoute><Budget /></PrivateRoute>} />
               <Route path="/family" element={<PrivateRoute><Family /></PrivateRoute>} />
               <Route path="/export" element={<PrivateRoute><Export /></PrivateRoute>} />
+              <Route path="/savings" element={<PrivateRoute><Savings /></PrivateRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
