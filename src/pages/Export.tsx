@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
-import { FileSpreadsheet, FilePdf, FileX } from "lucide-react";
+import { FileSpreadsheet, FileText, FileX } from "lucide-react";
 
 export default function Export() {
   const [dateRange, setDateRange] = useState<{from: Date | undefined, to: Date | undefined}>({
@@ -113,7 +113,7 @@ export default function Export() {
                     className="flex-1 gap-2 h-auto py-6"
                     onClick={() => setFileFormat('pdf')}
                   >
-                    <FilePdf className="h-8 w-8 mb-1" />
+                    <FileText className="h-8 w-8 mb-1" />
                     <div>
                       <div className="font-semibold">PDF</div>
                       <div className="text-xs opacity-70">.pdf document</div>
@@ -136,7 +136,7 @@ export default function Export() {
               {fileFormat === 'excel' ? (
                 <FileSpreadsheet className="h-4 w-4" />
               ) : (
-                <FilePdf className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
               )}
               Export Data
             </Button>
