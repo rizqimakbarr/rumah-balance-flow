@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import TransactionsList from "@/components/dashboard/TransactionsList";
@@ -71,7 +70,9 @@ export default function Transactions() {
       const transactionData = {
         ...tx,
         user_id: user.id,
-        date: format(new Date(tx.date), 'yyyy-MM-dd'), // Ensure date is converted to string
+        date: typeof tx.date === 'string' 
+          ? tx.date 
+          : format(tx.date, 'dd/MM/yyyy'), // Ensure date is converted to string
       };
       
       if (editData) {
