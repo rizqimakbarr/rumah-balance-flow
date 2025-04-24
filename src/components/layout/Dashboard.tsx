@@ -1,3 +1,4 @@
+
 import { SidebarProvider, Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
@@ -5,6 +6,8 @@ import { Home, Inbox, Users, Calendar, Settings, Download, Moon, Sun, Plus, Circ
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface DashboardProps {
   children: React.ReactNode;
@@ -24,11 +27,45 @@ export default function Dashboard({ children }: DashboardProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [profileData, setProfileData] = useState<any>(null);
+
+  // Fetch user profile data
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user?.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+      } else if (data) {
+        setProfileData(data);
+      }
+    } catch (error) {
+      console.error("Error in profile fetch:", error);
+    }
+  };
 
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate("/auth");
   }
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (profileData?.name) {
+      return profileData.name.split(' ').map((name: string) => name[0]).join('');
+    }
+    return user?.email?.charAt(0).toUpperCase() || 'U';
+  };
 
   return (
     <SidebarProvider>
@@ -99,9 +136,12 @@ export default function Dashboard({ children }: DashboardProps) {
                   <span className="hidden sm:inline">Add Transaction</span>
                 </Button>
               ) : null}
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-blue-600 text-white flex items-center justify-center font-bold font-sans">
-                <span className="text-sm">AT</span>
-              </div>
+              <Avatar className="w-8 h-8 cursor-pointer" onClick={() => navigate("/settings")}>
+                <AvatarImage src={profileData?.avatar_url} alt={profileData?.name || "User"} />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-blue-600 text-white">
+                  {getUserInitials()}
+                </AvatarFallback>
+              </Avatar>
             </div>
           </header>
           <main className="p-6">{children}</main>

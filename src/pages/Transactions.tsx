@@ -68,24 +68,30 @@ export default function Transactions() {
     }
     
     try {
-      // Ensure the date is always formatted as a string before sending to Supabase
+      // Format the date as an ISO string for database compatibility
       let formattedDate: string;
       
       if (isDate(tx.date)) {
-        // If it's a Date object, format it
-        formattedDate = format(tx.date, 'dd/MM/yyyy');
+        // If it's a Date object, convert to ISO string for database storage
+        formattedDate = tx.date.toISOString();
       } else if (typeof tx.date === 'string') {
-        // If it's already a string, use it directly
-        formattedDate = tx.date;
+        // If it's already a string, ensure it's in ISO format
+        try {
+          // Check if parseable as date and convert to ISO
+          formattedDate = new Date(tx.date).toISOString();
+        } catch {
+          // Fallback to current date if parsing fails
+          formattedDate = new Date().toISOString();
+        }
       } else {
         // Fallback to current date if for some reason the date is invalid
-        formattedDate = format(new Date(), 'dd/MM/yyyy');
+        formattedDate = new Date().toISOString();
       }
 
       const transactionData = {
         ...tx,
         user_id: user.id,
-        date: formattedDate, // Use the formatted date string
+        date: formattedDate, // Use the ISO formatted date string
       };
       
       if (editData) {
@@ -142,7 +148,10 @@ export default function Transactions() {
           
           const { error: updateError } = await supabase
             .from('savings_goals')
-            .update({ current_amount: newAmount, updated_at: new Date().toISOString() })
+            .update({ 
+              current_amount: newAmount, 
+              updated_at: new Date().toISOString() 
+            })
             .eq('id', goal.id);
             
           if (updateError) throw updateError;

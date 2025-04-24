@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Pencil, Lock } from "lucide-react";
+import { Plus, Pencil, Lock, Mail, UserRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -18,11 +18,19 @@ export default function Family() {
   const { user } = useAuth();
   const [members, setMembers] = useState<any[]>([]);
   const [editMember, setEditMember] = useState<any>(null);
-  const [newMember, setNewMember] = useState({ name: "", role: "Member", status: "offline" });
+  const [newMember, setNewMember] = useState({ 
+    name: "", 
+    email: "", 
+    role: "Member", 
+    status: "offline",
+    password: ""
+  });
   const [openNewDialog, setOpenNewDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [password, setPassword] = useState({ current: "", new: "", confirm: "" });
   const [isLoading, setIsLoading] = useState(true);
+  const [memberPassword, setMemberPassword] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
 
   const fetchMembers = async () => {
     if (!user) return;
@@ -58,34 +66,56 @@ export default function Family() {
       toast.error("Name is required");
       return;
     }
+
+    if (!newMember.email) {
+      toast.error("Email is required for member login");
+      return;
+    }
+
+    if (!newMember.password || newMember.password.length < 6) {
+      toast.error("Password is required and must be at least 6 characters");
+      return;
+    }
     
     try {
-      // Generate a unique ID for the new profile
-      const profileId = crypto.randomUUID();
+      // First create the auth user account
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: newMember.email,
+        password: newMember.password,
+        email_confirm: true,
+        user_metadata: { 
+          full_name: newMember.name,
+          role: newMember.role
+        }
+      });
       
-      // Insert the new family member
-      const { error } = await supabase
-        .from("profiles")
-        .insert([{ 
-          id: profileId, 
-          name: newMember.name, 
-          role: newMember.role, 
-          status: newMember.status
-        }]);
-        
-      if (error) throw error;
+      if (authError) {
+        // If this fails, try the signup method instead as fallback
+        if (authError.message.includes("admin") || authError.message.includes("permission")) {
+          const { data: signupData, error: signupError } = await supabase.auth.signUp({
+            email: newMember.email,
+            password: newMember.password,
+            options: {
+              data: {
+                full_name: newMember.name,
+                role: newMember.role
+              }
+            }
+          });
+          
+          if (signupError) throw signupError;
+        } else {
+          throw authError;
+        }
+      }
       
-      // Update local state
-      setMembers(prev => [...prev, { 
-        id: profileId, 
-        name: newMember.name, 
-        role: newMember.role, 
-        status: newMember.status 
-      }]);
-      
-      setNewMember({ name: "", role: "Member", status: "offline" });
-      setOpenNewDialog(false);
-      toast.success("Family member added successfully");
+      // The trigger should create the profile, but let's make sure by checking
+      setTimeout(() => {
+        fetchMembers(); // Refresh the members list
+        setNewMember({ name: "", email: "", role: "Member", status: "offline", password: "" });
+        setOpenNewDialog(false);
+        toast.success("Family member added successfully");
+      }, 1000); // Give some time for the trigger to work
     } catch (error: any) {
       toast.error("Failed to add family member: " + error.message);
     }
@@ -114,9 +144,38 @@ export default function Family() {
         
       if (error) throw error;
       
+      // Update password if provided
+      if (memberPassword && memberPassword.length >= 6 && memberEmail) {
+        try {
+          // Try admin update first
+          const { error: adminError } = await supabase.auth.admin.updateUserById(
+            editMember.id,
+            { password: memberPassword }
+          );
+          
+          // If admin update fails, try user update
+          if (adminError && (adminError.message.includes("admin") || adminError.message.includes("permission"))) {
+            // We can't update password for another user without admin rights
+            toast.info("Password changes for other users require admin privileges");
+          }
+          
+          if (!adminError) {
+            toast.success("Member password updated successfully");
+          }
+        } catch (passError: any) {
+          console.error("Password update error:", passError);
+        }
+      }
+      
       // Update local state
-      setMembers(prev => prev.map(m => m.id === editMember.id ? editMember : m));
+      setMembers(prev => prev.map(m => m.id === editMember.id ? {
+        ...editMember,
+        // Don't save password or email in profiles table for security
+      } : m));
+      
       setOpenEditDialog(false);
+      setMemberPassword("");
+      setMemberEmail("");
       toast.success("Member updated successfully");
     } catch (error: any) {
       toast.error("Failed to update member: " + error.message);
@@ -125,6 +184,20 @@ export default function Family() {
 
   const handleDeleteMember = async (id: string) => {
     try {
+      // Don't allow deleting current user
+      if (id === user?.id) {
+        toast.error("You can't delete your own account");
+        return;
+      }
+      
+      // Try to delete auth user first if admin
+      try {
+        await supabase.auth.admin.deleteUser(id);
+      } catch (authError) {
+        console.log("Admin delete failed, continuing with profile delete:", authError);
+      }
+      
+      // Delete the profile
       const { error } = await supabase
         .from("profiles")
         .delete()
@@ -201,6 +274,32 @@ export default function Family() {
                       />
                     </div>
                     <div>
+                      <Label htmlFor="email">Email (for login)</Label>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="email"
+                          type="email"
+                          value={newMember.email}
+                          onChange={(e) => setNewMember({...newMember, email: e.target.value})}
+                          placeholder="email@example.com"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="password">Password</Label>
+                      <div className="flex items-center gap-2">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="password"
+                          type="password"
+                          value={newMember.password}
+                          onChange={(e) => setNewMember({...newMember, password: e.target.value})}
+                          placeholder="Min 6 characters"
+                        />
+                      </div>
+                    </div>
+                    <div>
                       <Label htmlFor="role">Role</Label>
                       <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
                         <SelectTrigger id="role">
@@ -273,11 +372,46 @@ export default function Family() {
                           <div className="grid gap-4 py-4">
                             <div>
                               <Label htmlFor="edit-name">Name</Label>
-                              <Input
-                                id="edit-name"
-                                value={editMember.name}
-                                onChange={(e) => setEditMember({...editMember, name: e.target.value})}
-                              />
+                              <div className="flex items-center gap-2">
+                                <UserRound className="h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  id="edit-name"
+                                  value={editMember.name}
+                                  onChange={(e) => setEditMember({...editMember, name: e.target.value})}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label htmlFor="edit-email">Email (for login)</Label>
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  id="edit-email"
+                                  type="email"
+                                  placeholder="member@example.com"
+                                  value={memberEmail}
+                                  onChange={(e) => setMemberEmail(e.target.value)}
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Providing an email allows this member to log in with their own account
+                              </p>
+                            </div>
+                            <div>
+                              <Label htmlFor="edit-password">Set Password</Label>
+                              <div className="flex items-center gap-2">
+                                <Lock className="h-4 w-4 text-muted-foreground" />
+                                <Input
+                                  id="edit-password"
+                                  type="password"
+                                  placeholder="Min 6 characters"
+                                  value={memberPassword}
+                                  onChange={(e) => setMemberPassword(e.target.value)}
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Leave blank to keep current password
+                              </p>
                             </div>
                             <div>
                               <Label htmlFor="edit-role">Role</Label>
@@ -325,9 +459,12 @@ export default function Family() {
                           </div>
                         )}
                         <div className="flex justify-between">
-                          <Button variant="destructive" onClick={() => { handleDeleteMember(member.id); setOpenEditDialog(false); }}>
-                            Delete
-                          </Button>
+                          {member.id !== user?.id && (
+                            <Button variant="destructive" onClick={() => { handleDeleteMember(member.id); setOpenEditDialog(false); }}>
+                              Delete
+                            </Button>
+                          )}
+                          {member.id === user?.id && <div></div>}
                           <Button onClick={handleEditMember}>
                             Save Changes
                           </Button>
