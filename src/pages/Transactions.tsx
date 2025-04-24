@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import TransactionsList from "@/components/dashboard/TransactionsList";
@@ -5,7 +6,7 @@ import TransactionForm from "@/components/transactions/TransactionForm";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { format } from "date-fns"; // Make sure to import format from date-fns
+import { format } from "date-fns";
 
 export default function Transactions() {
   const { user } = useAuth();
@@ -70,9 +71,9 @@ export default function Transactions() {
       const transactionData = {
         ...tx,
         user_id: user.id,
-        date: typeof tx.date === 'string' 
-          ? tx.date 
-          : format(tx.date, 'dd/MM/yyyy'), // Ensure date is converted to string
+        date: tx.date instanceof Date 
+          ? format(tx.date, 'dd/MM/yyyy') 
+          : tx.date, // Ensure date is always a string
       };
       
       if (editData) {
