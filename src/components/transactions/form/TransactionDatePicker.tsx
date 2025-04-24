@@ -35,6 +35,7 @@ export function TransactionDatePicker({ date, onDateChange }: TransactionDatePic
             selected={date}
             onSelect={(date) => date && onDateChange(date)}
             initialFocus
+            className="pointer-events-auto"
           />
         </PopoverContent>
       </Popover>
