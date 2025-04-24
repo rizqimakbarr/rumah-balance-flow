@@ -71,7 +71,7 @@ export default function Transactions() {
       const transactionData = {
         ...tx,
         user_id: user.id,
-        date: format(new Date(tx.date.split('/').reverse().join('-')), 'yyyy-MM-dd'), // Convert to ISO-compatible string format
+        date: format(new Date(tx.date), 'yyyy-MM-dd'), // Ensure date is converted to string
       };
       
       if (editData) {
