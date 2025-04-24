@@ -1,19 +1,16 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { AmountInput } from "./form/AmountInput";
+import { TransactionDatePicker } from "./form/TransactionDatePicker";
+import { CategorySelect } from "./form/CategorySelect";
 
 interface TransactionFormProps {
   open: boolean;
@@ -31,7 +28,7 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("IDR");
   const [savingsGoals, setSavingsGoals] = useState<any[]>([]);
-  
+
   useEffect(() => {
     if (user && open && category === "Saving") {
       supabase.from('savings_goals')
@@ -66,7 +63,7 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
 
     const newTransaction = {
       id: editData?.id || Date.now().toString(),
-      date: format(date, "dd/MM/yyyy"),
+      date: date,
       amount: parseFloat(amount),
       type,
       category,
@@ -84,27 +81,6 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
     setCategory("");
     setDescription("");
     setCurrency("IDR");
-  };
-
-  const formatAsRupiah = (value: string) => {
-    const number = value.replace(/\D/g, "");
-    return number.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  };
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/\D/g, "");
-    setAmount(rawValue);
-  };
-  
-  const handleCategoryChange = (value: string) => {
-    setCategory(value);
-    
-    if (value === "Saving" && savingsGoals.length > 0) {
-      toast.info(
-        "Include a savings goal name in the description to automatically update its progress", 
-        { duration: 5000 }
-      );
-    }
   };
 
   return (
@@ -131,79 +107,23 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
               </Select>
             </div>
 
-            <div className="col-span-3">
-              <Label htmlFor="amount">Amount</Label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  {currency === "IDR" ? "Rp" : "$"}
-                </div>
-                <Input
-                  id="amount"
-                  value={formatAsRupiah(amount)}
-                  onChange={handleAmountChange}
-                  className="pl-8"
-                  placeholder="0"
-                />
-              </div>
+            <div className="col-span-4">
+              <AmountInput
+                amount={amount}
+                currency={currency}
+                onAmountChange={setAmount}
+                onCurrencyChange={setCurrency}
+              />
             </div>
 
-            <div className="col-span-1">
-              <Label htmlFor="currency">Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger id="currency">
-                  <SelectValue placeholder="IDR" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="IDR">IDR</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <TransactionDatePicker date={date} onDateChange={setDate} />
 
-            <div className="col-span-2">
-              <Label htmlFor="date">Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "dd/MM/yyyy") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(date) => date && setDate(date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="col-span-2">
-              <Label htmlFor="category">Category</Label>
-              <Select value={category} onValueChange={handleCategoryChange}>
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Housing">Housing</SelectItem>
-                  <SelectItem value="Food">Food</SelectItem>
-                  <SelectItem value="Transport">Transport</SelectItem>
-                  <SelectItem value="Utilities">Utilities</SelectItem>
-                  <SelectItem value="Entertainment">Entertainment</SelectItem>
-                  <SelectItem value="Saving">Saving</SelectItem>
-                  <SelectItem value="Salary">Salary</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <CategorySelect
+              category={category}
+              onCategoryChange={setCategory}
+              savingsGoals={savingsGoals}
+              onSavingsGoalClick={(title) => setDescription(title)}
+            />
 
             <div className="col-span-4">
               <Label htmlFor="description">Description</Label>
@@ -214,23 +134,6 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
                 placeholder={category === "Saving" ? "Include goal name to update progress (e.g. New Car)" : "Enter description"} 
                 className="resize-none"
               />
-              {category === "Saving" && savingsGoals.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-xs text-muted-foreground mb-1">Available goals:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {savingsGoals.map(goal => (
-                      <Badge 
-                        key={goal.title} 
-                        variant="outline" 
-                        className="cursor-pointer hover:bg-accent"
-                        onClick={() => setDescription(goal.title)}
-                      >
-                        {goal.title}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
