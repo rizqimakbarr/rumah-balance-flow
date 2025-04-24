@@ -6,6 +6,7 @@ interface StatsCardProps {
   title: string;
   value: string;
   description?: string;
+  helperText?: string;  // Added this property
   icon?: React.ReactNode;
   trend?: {
     value: number;
@@ -18,6 +19,7 @@ export default function StatsCard({
   title,
   value,
   description,
+  helperText,  // Added this parameter
   icon,
   trend,
   className,
@@ -32,6 +34,9 @@ export default function StatsCard({
         <div className="text-2xl font-bold">{value}</div>
         {description && (
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        )}
+        {helperText && (
+          <p className="text-xs text-muted-foreground mt-1">{helperText}</p>
         )}
         {trend && (
           <div className="flex items-center mt-2">

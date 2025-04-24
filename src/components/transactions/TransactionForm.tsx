@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,6 +13,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 
 interface TransactionFormProps {
   open: boolean;
@@ -32,7 +32,6 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
   const [currency, setCurrency] = useState("IDR");
   const [savingsGoals, setSavingsGoals] = useState<any[]>([]);
   
-  // Fetch savings goals to suggest in the description when "Saving" category is selected
   useEffect(() => {
     if (user && open && category === "Saving") {
       supabase.from('savings_goals')
@@ -100,7 +99,6 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
   const handleCategoryChange = (value: string) => {
     setCategory(value);
     
-    // If "Saving" is selected and there are savings goals, show a helper message
     if (value === "Saving" && savingsGoals.length > 0) {
       toast.info(
         "Include a savings goal name in the description to automatically update its progress", 

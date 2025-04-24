@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Card } from "@/components/ui/card";
 
 interface SavingsGoalType {
   id: string;
@@ -230,7 +231,10 @@ const Index = () => {
           
           const { error: updateError } = await supabase
             .from('savings_goals')
-            .update({ current_amount: newAmount, updated_at: new Date() })
+            .update({ 
+              current_amount: newAmount, 
+              updated_at: new Date().toISOString()
+            })
             .eq('id', goal.id);
             
           if (updateError) throw updateError;
