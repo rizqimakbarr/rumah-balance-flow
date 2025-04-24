@@ -6,7 +6,7 @@ import TransactionForm from "@/components/transactions/TransactionForm";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { format } from "date-fns";
+import { format, isDate } from "date-fns";
 
 export default function Transactions() {
   const { user } = useAuth();
@@ -68,12 +68,15 @@ export default function Transactions() {
     }
     
     try {
+      // Ensure the date is always a string before sending to Supabase
+      const formattedDate = isDate(tx.date) 
+        ? format(tx.date, 'dd/MM/yyyy') 
+        : tx.date;
+
       const transactionData = {
         ...tx,
         user_id: user.id,
-        date: tx.date instanceof Date 
-          ? format(tx.date, 'dd/MM/yyyy') 
-          : tx.date, // Ensure date is always a string
+        date: formattedDate, // Use the formatted date string
       };
       
       if (editData) {
