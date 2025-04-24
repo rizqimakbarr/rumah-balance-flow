@@ -142,7 +142,7 @@ export default function Transactions() {
           
           const { error: updateError } = await supabase
             .from('savings_goals')
-            .update({ current_amount: newAmount, updated_at: new Date() })
+            .update({ current_amount: newAmount, updated_at: new Date().toISOString() })
             .eq('id', goal.id);
             
           if (updateError) throw updateError;
