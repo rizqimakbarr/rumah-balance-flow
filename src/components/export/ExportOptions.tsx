@@ -37,17 +37,44 @@ export default function ExportOptions() {
       let filename;
       
       if (selectedFormat === "pdf") {
-        // For PDF, we create a simple HTML that gets converted to PDF
+        // Generate PDF using jsPDF
+        // Since we can't use jsPDF directly, we'll use the printJS library approach
+        // Create a hidden iframe that will trigger the browser's print dialog
         const htmlContent = `
+          <!DOCTYPE html>
           <html>
             <head>
               <title>Finance Report</title>
               <style>
+                @media print {
+                  body { font-family: Arial, sans-serif; padding: 20px; }
+                  h1 { color: #333; }
+                  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                  th { background-color: #f2f2f2; }
+                  .print-only { display: block; }
+                }
                 body { font-family: Arial, sans-serif; padding: 20px; }
                 h1 { color: #333; }
                 table { border-collapse: collapse; width: 100%; margin-top: 20px; }
                 th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                 th { background-color: #f2f2f2; }
+                .print-button { 
+                  background-color: #4CAF50;
+                  color: white;
+                  padding: 10px 15px;
+                  border: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 16px;
+                  margin: 20px 0;
+                }
+                .print-button:hover {
+                  background-color: #45a049;
+                }
+                @media print {
+                  .print-button { display: none; }
+                }
               </style>
             </head>
             <body>
@@ -71,14 +98,47 @@ export default function ExportOptions() {
                   </tr>
                 `).join('')}
               </table>
+              <button class="print-button" onclick="window.print(); setTimeout(() => window.close(), 500);">Save as PDF</button>
+              <script>
+                // Auto-trigger print dialog when the page loads
+                window.onload = function() {
+                  setTimeout(() => {
+                    window.print();
+                  }, 1000);
+                }
+              </script>
             </body>
           </html>
         `;
         
-        blob = new Blob([htmlContent], { type: 'text/html' });
-        filename = `finance-export-${new Date().toISOString().split('T')[0]}.html`;
-        // Note: In a real implementation, we would use a PDF library or service to convert HTML to PDF
-        // For this demo, we're using HTML that the user could print to PDF
+        // Open a new window for printing to PDF
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(htmlContent);
+          printWindow.document.close();
+        } else {
+          // If popup is blocked, provide the HTML file for download
+          blob = new Blob([htmlContent], { type: 'text/html' });
+          filename = `finance-export-${new Date().toISOString().split('T')[0]}.html`;
+          
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }, 100);
+          
+          toast.info("Please use the browser's Print to PDF feature to save as PDF", {
+            description: "Your report has opened in a new tab. Use Ctrl+P or the Print option to save as PDF.",
+            duration: 5000,
+          });
+        }
       } else {
         // For Excel, we create a CSV file
         const headers = ["ID", "Date", "Amount", "Type", "Category"];
@@ -97,25 +157,24 @@ export default function ExportOptions() {
         
         blob = new Blob([csvContent], { type: 'text/csv' });
         filename = `finance-export-${new Date().toISOString().split('T')[0]}.csv`;
-        // Note: In a real implementation, we would use a library like xlsx to create proper Excel files
+        
+        // Create download element
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
       }
       
-      // Create download element
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-      
       toast.success(`Export successful`, {
-        description: `Your ${format} has been downloaded.`,
+        description: `Your ${format} has been processed.`,
         duration: 3000,
       });
     } catch (error) {

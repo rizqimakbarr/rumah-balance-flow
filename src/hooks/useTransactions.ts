@@ -98,7 +98,19 @@ export const useTransactions = (userId: string | undefined) => {
         date: formattedDate,
       };
       
-      if ('id' in tx) {
+      // Remove the client-side generated ID from the data sent to Supabase
+      if ('id' in tx && typeof tx.id === 'string' && !isUUID(tx.id)) {
+        // If the ID is not a valid UUID, remove it before insertion
+        const { id, ...dataWithoutId } = transactionData;
+        
+        const { error } = await supabase
+          .from('transactions')
+          .insert([dataWithoutId]);
+          
+        if (error) throw error;
+        toast.success("Transaction added successfully");
+      } else if ('id' in tx && isUUID(tx.id)) {
+        // If it's a valid UUID, this is an update
         const { error } = await supabase
           .from('transactions')
           .update(transactionData)
@@ -107,11 +119,12 @@ export const useTransactions = (userId: string | undefined) => {
         if (error) throw error;
         toast.success("Transaction updated successfully");
       } else {
-        // Remove id if present but undefined
-        const { id, ...newTx } = transactionData;
+        // No ID or non-string ID, just insert without it
+        const { id, ...dataWithoutId } = transactionData;
+        
         const { error } = await supabase
           .from('transactions')
-          .insert([newTx]);
+          .insert([dataWithoutId]);
           
         if (error) throw error;
         toast.success("Transaction added successfully");
@@ -142,6 +155,12 @@ export const useTransactions = (userId: string | undefined) => {
     } catch (error: any) {
       toast.error("Failed to delete transaction: " + error.message);
     }
+  };
+
+  // Helper function to check if a string is a valid UUID
+  const isUUID = (id: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
   };
 
   return {
