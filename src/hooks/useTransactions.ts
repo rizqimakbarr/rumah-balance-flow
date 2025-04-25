@@ -77,15 +77,18 @@ export const useTransactions = (userId: string | undefined) => {
     try {
       let formattedDate: string;
       
+      // Fix the date handling to ensure we have a proper ISO string
       if (tx.date instanceof Date) {
         formattedDate = tx.date.toISOString();
       } else if (typeof tx.date === 'string') {
+        // If it's already a string, make sure it's a valid date before converting
         try {
           formattedDate = new Date(tx.date).toISOString();
         } catch {
           formattedDate = new Date().toISOString();
         }
       } else {
+        // If date is undefined or something else, use current date
         formattedDate = new Date().toISOString();
       }
 
@@ -104,6 +107,7 @@ export const useTransactions = (userId: string | undefined) => {
         if (error) throw error;
         toast.success("Transaction updated successfully");
       } else {
+        // Remove id if present but undefined
         const { id, ...newTx } = transactionData;
         const { error } = await supabase
           .from('transactions')
@@ -119,7 +123,8 @@ export const useTransactions = (userId: string | undefined) => {
       
       fetchTransactions();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error("Failed to save transaction: " + error.message);
+      console.error("Transaction error:", error);
     }
   };
 
@@ -147,4 +152,3 @@ export const useTransactions = (userId: string | undefined) => {
     handleDelete
   };
 };
-

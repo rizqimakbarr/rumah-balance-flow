@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +16,14 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // If user is already logged in, redirect to home
+  useEffect(() => {
+    if (user) {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
@@ -36,7 +46,9 @@ export default function Auth() {
         if (error) {
           console.error("Login error:", error);
           setError(error.message);
-          toast.error("Login failed");
+          toast.error("Login failed", {
+            description: error.message
+          });
         } else if (data.user) {
           console.log("Login successful for:", data.user.email);
           toast.success("Logged in successfully!");
@@ -55,17 +67,30 @@ export default function Auth() {
         if (error) {
           console.error("Signup error:", error);
           setError(error.message);
-          toast.error("Registration failed");
+          toast.error("Registration failed", {
+            description: error.message
+          });
         } else if (data.user) {
           console.log("Signup successful for:", data.user.email);
-          toast.success("Registration successful! Please check your email to verify your account.");
-          setIsLogin(true);
+          
+          // Check if email confirmation is required
+          if (data.session) {
+            // No email confirmation required
+            toast.success("Registration successful! You're now logged in.");
+            navigate("/");
+          } else {
+            // Email confirmation required
+            toast.success("Registration successful! Please check your email to verify your account.");
+            setIsLogin(true);
+          }
         }
       }
     } catch (err: any) {
       console.error("Auth error:", err);
       setError(err.message || "An unexpected error occurred");
-      toast.error("Authentication error");
+      toast.error("Authentication error", {
+        description: err.message
+      });
     } finally {
       setLoading(false);
     }
@@ -137,6 +162,11 @@ export default function Auth() {
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
+          </div>
+          <div className="text-center mt-6 text-sm text-muted-foreground">
+            <p>
+              Make sure your Supabase project's URL configuration is set up correctly in the Supabase Dashboard under Authentication &gt; URL Configuration.
+            </p>
           </div>
         </CardContent>
       </Card>

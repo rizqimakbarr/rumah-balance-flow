@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -30,27 +32,44 @@ export default function Settings() {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+      // First try to get name from user metadata
+      let name = user.user_metadata?.full_name || '';
+      let email = user.email || '';
       
-      if (error) throw error;
-      
-      if (data) {
-        setProfile({
-          ...data,
-          email: user.email || "",
-        });
-      } else {
-        setProfile({
-          name: user.user_metadata?.full_name || "",
-          email: user.email || "",
-        });
+      // Then try to get profile data from profiles table
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle();
+        
+        if (!error && data) {
+          // If we found a profile, use its data
+          name = data.name || name;
+        } else {
+          console.log("No profile found for user, creating one");
+          // If no profile exists yet, create one with metadata
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert([{ 
+              id: user.id, 
+              name: name || email.split('@')[0],
+              role: 'Member'
+            }]);
+          
+          if (insertError) {
+            console.error("Failed to create profile:", insertError);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
       }
-    } catch (error: any) {
-      toast.error("Failed to load profile: " + error.message);
+      
+      setProfile({
+        name: name || email.split('@')[0],
+        email: email,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -67,6 +86,7 @@ export default function Settings() {
     }
     
     try {
+      // First update the profile in the database
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ name: profile.name })
@@ -74,6 +94,16 @@ export default function Settings() {
       
       if (profileError) throw profileError;
       
+      // Also update user metadata
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { full_name: profile.name }
+      });
+      
+      if (metadataError) {
+        console.warn("Could not update user metadata:", metadataError);
+      }
+      
+      // Handle email change if needed
       if (profile.email !== user.email) {
         const { error: emailError } = await supabase.auth.updateUser({ 
           email: profile.email 
@@ -127,6 +157,20 @@ export default function Settings() {
     toast.success("Preferences updated successfully!");
   };
 
+  // Function to get user initials from name
+  const getUserInitials = (name: string): string => {
+    if (!name) return 'U';
+    
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 0 || parts[0] === '') return 'U';
+    
+    if (parts.length === 1) {
+      return parts[0].charAt(0).toUpperCase();
+    }
+    
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
+
   return (
     <Dashboard>
       <div className="max-w-3xl mx-auto space-y-8">
@@ -146,20 +190,21 @@ export default function Settings() {
               <CardContent className="p-6 space-y-6">
                 {isLoading ? (
                   <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
                     <p>Loading profile...</p>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-4">
                       <Avatar className="h-20 w-20">
-                        <AvatarImage src={profile.avatar_url || ""} alt={profile.name} />
+                        <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt={profile.name} />
                         <AvatarFallback className="bg-primary text-2xl">
-                          {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
+                          {getUserInitials(profile.name)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <h3 className="font-medium text-lg">{profile.name || 'User'}</h3>
-                        <p className="text-sm text-muted-foreground">{profile.email || 'No email'}</p>
+                        <p className="text-sm text-muted-foreground">{profile.email || user?.email || 'No email'}</p>
                         <Button variant="outline" size="sm" className="mt-2">
                           Change Photo
                         </Button>
@@ -181,7 +226,7 @@ export default function Settings() {
                         <Input 
                           id="email" 
                           name="email" 
-                          value={profile.email || ""} 
+                          value={profile.email || user?.email || ""} 
                           onChange={handleProfileChange}
                         />
                         <p className="text-xs text-muted-foreground mt-1">
