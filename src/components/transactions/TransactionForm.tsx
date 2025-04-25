@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,7 +43,7 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
 
   useEffect(() => {
     if (editData) {
-      setDate(new Date(editData.date.split("/").reverse().join("-")));
+      setDate(new Date(editData.date));
       setAmount(editData.amount.toString());
       setType(editData.type);
       setCategory(editData.category);
