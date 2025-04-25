@@ -138,20 +138,23 @@ export default function Savings() {
   return (
     <Dashboard>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Savings Goals</h1>
-            <p className="text-muted-foreground">
-              Create savings goals and track your progress. Use transactions with category "Saving" and include goal name in description to update progress.
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold mb-1">Savings Goals</h1>
+            <p className="text-muted-foreground text-sm">
+              Track your savings progress and set new goals
             </p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => {
-                setIsEditing(false);
-                setCurrentGoal({ title: "", target_amount: 0, current_amount: 0 });
-              }}>
-                <Plus className="mr-2" /> Add Goal
+              <Button 
+                className="shrink-0" 
+                onClick={() => {
+                  setIsEditing(false);
+                  setCurrentGoal({ title: "", target_amount: 0, current_amount: 0 });
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" /> New Goal
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -203,6 +206,7 @@ export default function Savings() {
             </DialogContent>
           </Dialog>
         </div>
+
         {isLoading ? (
           <div className="text-center py-8">
             <p>Loading savings goals...</p>

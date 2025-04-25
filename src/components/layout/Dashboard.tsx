@@ -1,4 +1,3 @@
-
 import { SidebarProvider, Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
@@ -29,7 +28,6 @@ export default function Dashboard({ children }: DashboardProps) {
   const { user } = useAuth();
   const [profileData, setProfileData] = useState<any>(null);
 
-  // Fetch user profile data
   useEffect(() => {
     if (user) {
       fetchUserProfile();
@@ -59,7 +57,6 @@ export default function Dashboard({ children }: DashboardProps) {
     navigate("/auth");
   }
 
-  // Get user initials for avatar fallback
   const getUserInitials = () => {
     if (profileData?.name) {
       return profileData.name.split(' ').map((name: string) => name[0]).join('');
@@ -131,13 +128,23 @@ export default function Dashboard({ children }: DashboardProps) {
             </div>
             <div className="flex items-center gap-2">
               {location.pathname === "/" || location.pathname === "/transactions" ? (
-                <Button size="sm" className="gap-1 bg-primary hover:bg-primary/90" onClick={() => document.dispatchEvent(new CustomEvent("open-transaction-modal"))}>
+                <Button 
+                  size="sm" 
+                  className="gap-1 bg-primary hover:bg-primary/90" 
+                  onClick={() => document.dispatchEvent(new CustomEvent("open-transaction-modal"))}
+                >
                   <Plus size={16} />
                   <span className="hidden sm:inline">Add Transaction</span>
                 </Button>
               ) : null}
-              <Avatar className="w-8 h-8 cursor-pointer" onClick={() => navigate("/settings")}>
-                <AvatarImage src={profileData?.avatar_url} alt={profileData?.name || "User"} />
+              <Avatar 
+                className="w-8 h-8 cursor-pointer hover:opacity-90 transition-opacity" 
+                onClick={() => navigate("/settings")}
+              >
+                <AvatarImage 
+                  src={profileData?.avatar_url || user?.user_metadata?.avatar_url} 
+                  alt={profileData?.name || user?.user_metadata?.full_name || "User"} 
+                />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-blue-600 text-white">
                   {getUserInitials()}
                 </AvatarFallback>

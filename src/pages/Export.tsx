@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
-import { FileSpreadsheet, FileText, FileX, Loader2 } from "lucide-react";
-import ExportOptions from "@/components/export/ExportOptions";
+import { FileSpreadsheet, FileText, Loader2, Calendar } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 export default function Export() {
   const [dateRange, setDateRange] = useState<{from: Date | undefined, to: Date | undefined}>({
@@ -26,11 +27,8 @@ export default function Export() {
     setIsExporting(true);
     
     try {
-      // Create a placeholder download based on the selected format
       let blob;
       let filename;
-      
-      // Sample data for demonstration
       const dummyData = {
         reportType,
         dateRange: {
@@ -44,7 +42,6 @@ export default function Export() {
       };
       
       if (fileFormat === 'excel') {
-        // Create CSV for Excel export
         const headers = ["ID", "Date", "Amount", "Type", "Category"];
         const rows = dummyData.transactions.map(t => [
           t.id,
@@ -62,7 +59,6 @@ export default function Export() {
         blob = new Blob([csvContent], { type: 'text/csv' });
         filename = `finance-${reportType}-${new Date().toISOString().split('T')[0]}.csv`;
       } else {
-        // Create HTML for PDF export (in a real app you would use a PDF library)
         const htmlContent = `
           <html>
             <head>
@@ -74,6 +70,9 @@ export default function Export() {
                 table { border-collapse: collapse; width: 100%; margin-top: 20px; }
                 th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                 th { background-color: #f2f2f2; }
+                @media print {
+                  .no-print { display: none; }
+                }
               </style>
             </head>
             <body>
@@ -99,15 +98,21 @@ export default function Export() {
                   </tr>
                 `).join('')}
               </table>
+              <button class="no-print" onclick="window.print(); setTimeout(() => window.close(), 500);">
+                Save as PDF
+              </button>
             </body>
           </html>
         `;
         
-        blob = new Blob([htmlContent], { type: 'text/html' });
-        filename = `finance-${reportType}-${new Date().toISOString().split('T')[0]}.html`;
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(htmlContent);
+          printWindow.document.close();
+        }
+        return;
       }
       
-      // Create download element
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -115,7 +120,6 @@ export default function Export() {
       document.body.appendChild(a);
       a.click();
       
-      // Clean up
       setTimeout(() => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
@@ -134,135 +138,95 @@ export default function Export() {
 
   return (
     <Dashboard>
-      <div className="max-w-3xl mx-auto space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-md">
-            <CardHeader className="bg-gradient-to-br from-background to-muted/30">
-              <CardTitle>Export Data</CardTitle>
-              <CardDescription>Download your financial data</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              <div className="grid gap-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Available Reports</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className={`cursor-pointer transition-all border ${reportType === 'transactions' ? 'border-primary' : ''}`}
-                      onClick={() => setReportType("transactions")}>
-                      <CardHeader className="p-4">
-                        <CardTitle className="text-base">Transactions</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
-                        All transactions with details
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className={`cursor-pointer transition-all border ${reportType === 'budget' ? 'border-primary' : ''}`}
-                      onClick={() => setReportType("budget")}>
-                      <CardHeader className="p-4">
-                        <CardTitle className="text-base">Budget Report</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
-                        Budget vs. actual spending
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className={`cursor-pointer transition-all border ${reportType === 'summary' ? 'border-primary' : ''}`}
-                      onClick={() => setReportType("summary")}>
-                      <CardHeader className="p-4">
-                        <CardTitle className="text-base">Summary</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
-                        Monthly financial summary
-                      </CardContent>
-                    </Card>
-                  </div>
+      <div className="max-w-2xl mx-auto">
+        <Card className="shadow-md">
+          <CardHeader className="bg-gradient-to-br from-background to-muted/30 space-y-1">
+            <CardTitle>Export Data</CardTitle>
+            <CardDescription>Download your financial records</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            <div className="space-y-4">
+              <div>
+                <Label>Report Type</Label>
+                <Select value={reportType} onValueChange={setReportType}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select report type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="transactions">Transactions History</SelectItem>
+                    <SelectItem value="budget">Budget Report</SelectItem>
+                    <SelectItem value="summary">Monthly Summary</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>From Date</Label>
+                  <DatePicker
+                    selected={dateRange.from}
+                    onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
+                  />
                 </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Date Range</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">From</label>
-                      <DatePicker
-                        selected={dateRange.from}
-                        onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">To</label>
-                      <DatePicker
-                        selected={dateRange.to}
-                        onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
-                        disabled={!dateRange.from}
-                        minDate={dateRange.from}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Export Format</h3>
-                  <div className="flex gap-4">
-                    <Button 
-                      variant={fileFormat === 'excel' ? 'default' : 'outline'} 
-                      className="flex-1 gap-2 h-auto py-6"
-                      onClick={() => setFileFormat('excel')}
-                    >
-                      <FileSpreadsheet className="h-8 w-8 mb-1" />
-                      <div>
-                        <div className="font-semibold">Excel</div>
-                        <div className="text-xs opacity-70">.csv format</div>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      variant={fileFormat === 'pdf' ? 'default' : 'outline'} 
-                      className="flex-1 gap-2 h-auto py-6"
-                      onClick={() => setFileFormat('pdf')}
-                    >
-                      <FileText className="h-8 w-8 mb-1" />
-                      <div>
-                        <div className="font-semibold">PDF</div>
-                        <div className="text-xs opacity-70">.html document</div>
-                      </div>
-                    </Button>
-                  </div>
+                <div className="space-y-2">
+                  <Label>To Date</Label>
+                  <DatePicker
+                    selected={dateRange.to}
+                    onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
+                    disabled={!dateRange.from}
+                    minDate={dateRange.from}
+                  />
                 </div>
               </div>
-            </CardContent>
-            <CardFooter className="flex justify-between border-t p-6">
-              <Button variant="outline" className="gap-2" onClick={() => {
-                setReportType("transactions");
-                setFileFormat("excel");
-                setDateRange({ from: undefined, to: undefined });
-              }}>
-                <FileX className="h-4 w-4" />
-                Reset
-              </Button>
-              <Button className="gap-2" onClick={handleExport} disabled={isExporting}>
-                {isExporting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    {fileFormat === 'excel' ? (
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
-                    ) : (
-                      <FileText className="h-4 w-4 mr-2" />
-                    )}
-                    Export Data
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          <div className="space-y-6">
-            <ExportOptions />
-          </div>
-        </div>
+
+              <div className="space-y-2">
+                <Label>Export Format</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Button 
+                    variant={fileFormat === 'excel' ? 'default' : 'outline'} 
+                    className="justify-center gap-2 h-auto py-3"
+                    onClick={() => setFileFormat('excel')}
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Excel (.csv)
+                  </Button>
+                  
+                  <Button 
+                    variant={fileFormat === 'pdf' ? 'default' : 'outline'} 
+                    className="justify-center gap-2 h-auto py-3"
+                    onClick={() => setFileFormat('pdf')}
+                  >
+                    <FileText className="h-4 w-4" />
+                    PDF Report
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="bg-muted/5">
+            <Button 
+              className="w-full gap-2" 
+              onClick={handleExport} 
+              disabled={isExporting || !dateRange.from || !dateRange.to}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {fileFormat === 'excel' ? (
+                    <FileSpreadsheet className="h-4 w-4" />
+                  ) : (
+                    <FileText className="h-4 w-4" />
+                  )}
+                  Export Data
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     </Dashboard>
   );

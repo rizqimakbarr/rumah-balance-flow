@@ -2,22 +2,22 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-// Define the type for our auth context
 type AuthContextType = {
   user: any | null;
   session: any | null;
   loading: boolean;
   setUser: (user: any | null) => void;
   setSession: (session: any | null) => void;
+  login: (email: string, password: string) => Promise<{ error: any | null }>;
 };
 
-// Create context with a default value matching the type
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
   setUser: () => {},
   setSession: () => {},
+  login: async () => ({ error: null }),
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -25,8 +25,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const login = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      
+      // Update session and user immediately
+      if (data.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error("Login error:", error);
+      return { error };
+    }
+  };
+
   useEffect(() => {
-    // Set up auth state listener FIRST with proper config
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session?.user?.email);
       if (session) {
@@ -53,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, setUser, setSession }}>
+    <AuthContext.Provider value={{ user, session, loading, setUser, setSession, login }}>
       {children}
     </AuthContext.Provider>
   );
