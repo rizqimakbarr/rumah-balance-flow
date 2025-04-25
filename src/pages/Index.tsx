@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import StatsCard from "@/components/dashboard/StatsCard";
@@ -165,7 +166,8 @@ const Index = () => {
       const transactionData = {
         ...tx,
         user_id: user.id,
-        date: new Date(tx.date.split('/').reverse().join('-')),
+        // Fix the date handling - ensure it's properly formatted as an ISO string
+        date: tx.date instanceof Date ? tx.date.toISOString() : new Date(tx.date).toISOString(),
       };
       
       if (editTransactionData) {

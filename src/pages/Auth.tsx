@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -28,48 +27,43 @@ export default function Auth() {
     
     try {
       if (isLogin) {
+        console.log("Attempting login with:", form.email);
         const { data, error } = await supabase.auth.signInWithPassword({ 
           email: form.email, 
           password: form.password 
         });
         
         if (error) {
+          console.error("Login error:", error);
           setError(error.message);
           toast.error("Login failed");
         } else if (data.user) {
+          console.log("Login successful for:", data.user.email);
           toast.success("Logged in successfully!");
           navigate("/");
         }
       } else {
+        console.log("Attempting signup with:", form.email);
         const { data, error } = await supabase.auth.signUp({
           email: form.email,
           password: form.password,
           options: { 
             data: { full_name: form.name },
-            emailRedirectTo: window.location.origin
           },
         });
         
         if (error) {
+          console.error("Signup error:", error);
           setError(error.message);
           toast.error("Registration failed");
         } else if (data.user) {
-          toast.success("Registration successful!");
-          // Auto-login after registration since we've disabled email confirmation
-          const { error: loginError } = await supabase.auth.signInWithPassword({ 
-            email: form.email, 
-            password: form.password 
-          });
-          
-          if (!loginError) {
-            navigate("/");
-          } else {
-            setIsLogin(true);
-            toast.info("Please login with your new account");
-          }
+          console.log("Signup successful for:", data.user.email);
+          toast.success("Registration successful! Please check your email to verify your account.");
+          setIsLogin(true);
         }
       }
     } catch (err: any) {
+      console.error("Auth error:", err);
       setError(err.message || "An unexpected error occurred");
       toast.error("Authentication error");
     } finally {

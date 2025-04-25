@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -31,7 +30,6 @@ export default function Settings() {
     setIsLoading(true);
     
     try {
-      // Get user profile from profiles table
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -43,7 +41,7 @@ export default function Settings() {
       if (data) {
         setProfile({
           ...data,
-          email: user.email || "", // Use email from auth user
+          email: user.email || "",
         });
       } else {
         setProfile({
@@ -69,7 +67,6 @@ export default function Settings() {
     }
     
     try {
-      // Update profile in profiles table
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ name: profile.name })
@@ -77,7 +74,6 @@ export default function Settings() {
       
       if (profileError) throw profileError;
       
-      // Update email in auth if it has changed
       if (profile.email !== user.email) {
         const { error: emailError } = await supabase.auth.updateUser({ 
           email: profile.email 
@@ -128,7 +124,6 @@ export default function Settings() {
   };
   
   const handleSavePreferences = async () => {
-    // In a real app, you could save these preferences to the user's profile
     toast.success("Preferences updated successfully!");
   };
 
@@ -159,7 +154,7 @@ export default function Settings() {
                       <Avatar className="h-20 w-20">
                         <AvatarImage src={profile.avatar_url || ""} alt={profile.name} />
                         <AvatarFallback className="bg-primary text-2xl">
-                          {profile.name?.split(' ').map((name: string) => name[0]).join('') || 'U'}
+                          {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div>

@@ -20,6 +20,34 @@ export default function ExportOptions() {
   const handleExport = useCallback(() => {
     const format = selectedFormat === "pdf" ? "PDF report" : "Excel spreadsheet";
     
+    // Create a placeholder download for demonstration
+    // In a real implementation, this would generate and download the actual file
+    const dummyData = {
+      date: new Date().toISOString(),
+      transactions: [
+        { id: 1, date: new Date().toISOString(), amount: 500000, type: "expense", category: "Food" },
+        { id: 2, date: new Date().toISOString(), amount: 1000000, type: "income", category: "Salary" }
+      ]
+    };
+    
+    // Convert to string for download
+    const dataString = JSON.stringify(dummyData, null, 2);
+    const blob = new Blob([dataString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create download element
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finance-export-${new Date().toISOString().split('T')[0]}.${selectedFormat === "pdf" ? "json" : "json"}`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
     toast.success(`Export successful`, {
       description: `Your ${format} has been downloaded.`,
       duration: 3000,
