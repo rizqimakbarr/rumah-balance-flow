@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -72,6 +71,10 @@ export default function TransactionForm({ open, onOpenChange, onAddTransaction, 
     };
 
     onAddTransaction(newTransaction);
+    
+    // Auto-close the form after submission
+    onOpenChange(false);
+    resetForm();
   };
 
   const resetForm = () => {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -162,11 +161,6 @@ export default function Auth() {
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
-          </div>
-          <div className="text-center mt-6 text-sm text-muted-foreground">
-            <p>
-              Make sure your Supabase project's URL configuration is set up correctly in the Supabase Dashboard under Authentication &gt; URL Configuration.
-            </p>
           </div>
         </CardContent>
       </Card>

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import Dashboard from "@/components/layout/Dashboard";
 import TransactionsList from "@/components/dashboard/TransactionsList";
@@ -14,10 +13,17 @@ export default function Transactions() {
   
   const {
     transactions,
+    fetchTransactions,
     handleAddOrUpdate,
     handleDelete
   } = useTransactions(user?.id);
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchTransactions();
+    }
+  }, [user?.id, fetchTransactions]);
+  
   useEffect(() => {
     const handleOpenModal = () => {
       setShowForm(true);

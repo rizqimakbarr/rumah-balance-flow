@@ -1,7 +1,9 @@
-
+import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CategorySelectProps {
   category: string;
@@ -16,6 +18,28 @@ export function CategorySelect({
   savingsGoals,
   onSavingsGoalClick 
 }: CategorySelectProps) {
+  const { user } = useAuth();
+  const [budgetCategories, setBudgetCategories] = useState<{id: string, name: string}[]>([]);
+  
+  // Default categories as fallback
+  const defaultCategories = [
+    "Housing", "Food", "Transport", "Utilities", 
+    "Entertainment", "Saving", "Salary", "Other"
+  ];
+  
+  useEffect(() => {
+    if (user) {
+      supabase.from("budget_categories")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .then(({ data, error }) => {
+          if (!error && data && data.length > 0) {
+            setBudgetCategories(data);
+          }
+        });
+    }
+  }, [user]);
+  
   return (
     <div className="col-span-2">
       <Label htmlFor="category">Category</Label>
@@ -24,13 +48,20 @@ export function CategorySelect({
           <SelectValue placeholder="Select category" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="Housing">Housing</SelectItem>
-          <SelectItem value="Food">Food</SelectItem>
-          <SelectItem value="Transport">Transport</SelectItem>
-          <SelectItem value="Utilities">Utilities</SelectItem>
-          <SelectItem value="Entertainment">Entertainment</SelectItem>
-          <SelectItem value="Saving">Saving</SelectItem>
+          {/* Show budget categories if available */}
+          {budgetCategories.length > 0 ? (
+            budgetCategories.map(cat => (
+              <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+            ))
+          ) : (
+            // Fallback to default categories
+            defaultCategories.map(cat => (
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            ))
+          )}
+          {/* Always include these basic categories */}
           <SelectItem value="Salary">Salary</SelectItem>
+          <SelectItem value="Saving">Saving</SelectItem>
           <SelectItem value="Other">Other</SelectItem>
         </SelectContent>
       </Select>
