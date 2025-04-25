@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,8 +16,7 @@ import Auth from "./pages/Auth";
 import Savings from "./pages/Savings";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
-
-const queryClient = new QueryClient();
+import { useState } from "react";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
@@ -33,30 +33,35 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return auth.user ? <>{children}</> : <Navigate to="/auth" />;
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<PrivateRoute><Index /></PrivateRoute>} />
-              <Route path="/transactions" element={<PrivateRoute><Transactions /></PrivateRoute>} />
-              <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
-              <Route path="/budget" element={<PrivateRoute><Budget /></PrivateRoute>} />
-              <Route path="/family" element={<PrivateRoute><Family /></PrivateRoute>} />
-              <Route path="/export" element={<PrivateRoute><Export /></PrivateRoute>} />
-              <Route path="/savings" element={<PrivateRoute><Savings /></PrivateRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Create a new QueryClient instance inside the component
+  const [queryClient] = useState(() => new QueryClient());
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="light">
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/" element={<PrivateRoute><Index /></PrivateRoute>} />
+                <Route path="/transactions" element={<PrivateRoute><Transactions /></PrivateRoute>} />
+                <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+                <Route path="/budget" element={<PrivateRoute><Budget /></PrivateRoute>} />
+                <Route path="/family" element={<PrivateRoute><Family /></PrivateRoute>} />
+                <Route path="/export" element={<PrivateRoute><Export /></PrivateRoute>} />
+                <Route path="/savings" element={<PrivateRoute><Savings /></PrivateRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
